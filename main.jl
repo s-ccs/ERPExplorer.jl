@@ -71,24 +71,32 @@ function JSServe.jsrender(s::Session, selector::SelectSet)
     return JSServe.jsrender(s, D.Card(D.FlexCol(rows...)))
 end
 
-function widget(args)
+function value_range(args)
     type = args[end-1]
     default_values = args[end]
     if type == :ContinuousTerm
         mini = round(Int, default_values.min)
         maxi = round(Int, default_values.max)
-        range_slider = RangeSlider(mini:maxi; value=Int[mini, maxi])
-        range_slider.ticks[] = Dict(
-            "mode" => "range",
-            "density" => 10
-        )
-        range_slider.orientation[] = JSServe.WidgetsBase.vertical
-        return range_slider
+        return mini:maxi
     elseif type == :CategoricalTerm
-        return SelectSet(default_values)
+        return Set(default_values)
     else
         error("No widget for $(args)")
     end
+end
+
+function widget(range::AbstractRange{<: Number})
+    range_slider = RangeSlider(range; value=Int[minimum(range), maximum(range)])
+    range_slider.ticks[] = Dict(
+        "mode" => "range",
+        "density" => 10
+    )
+    range_slider.orientation[] = JSServe.WidgetsBase.vertical
+    return range_slider
+end
+
+function widget(values::Set)
+    return SelectSet(collect(values))
 end
 
 widget_value(w) = w.value
@@ -97,20 +105,6 @@ function widget_value(slider::RangeSlider)
     map(x-> x[1]:x[2], slider.value)
 end
 
-function signal_to_lines(eff, variables)
-    points = Point2f[]
-    colors = RGBAf[]
-    for var in variables
-        for k in unique(eff[!, var])
-            ix = eff[!, var] .== k
-            k_points = Point2f.(eff.time[ix], disallowmissing(eff.yhat[ix]))
-            append!(points, k_points)
-            push!(points, Point2f(NaN))
-            append!(colors, fill(rand(RGBAf), length(k_points) + 1))
-        end
-    end
-    return points, colors
-end
 
 function formular_text(content; class="")
     return DOM.div(content; class="p-1 text-lg font-semibold $(class)")
@@ -120,19 +114,71 @@ function dropdown(name, content)
     return DOM.div(formular_text(name), DOM.div(content; class="dropdown-content"); class="hover:bg-gray-100 dropdown")
 end
 
+
+function style_map(range::AbstractRange{<:Number})
+    return identity # continous
+end
+
+function style_map(values::Set)
+    mpalette = [:circle, :star4, :xcross, :diamond]
+    dict = Dict(v=>mpalette[i] for (i, v) in enumerate(values))
+    return v-> dict[v]
+end
+
+function signal_to_lines(eff, variables, style_lookup, mcolor_lookup)
+    points = Point2f[]
+    markers = Symbol[]
+    mcolor = RGBAf[]
+    colors = Float32[]
+    all_cond = unique(eff.condition)
+
+    for group in groupby(eff, variables)
+        gpoints = Point2f.(group.time, replace(group.yhat, missing => NaN))
+        append!(points, gpoints); push!(points, Point2f(NaN))
+        N = length(gpoints) + 1
+        var = :continuous
+        cval = group[1, var]
+        append!(colors, fill(style_lookup[var](cval), N))
+        var = :condition
+        conval = group[1, var]
+        append!(markers, fill(style_lookup[var](conval), N))
+        append!(mcolor, fill(mcolor_lookup[conval], N))
+    end
+    return points, colors, mcolor, markers
+end
+
+
 App() do
     formulaS6 = @formula(0 ~ 1 + condition + continuous)
     m = Unfold.fit(UnfoldModel, formulaS6, evts, dataS, times)
     d = formula_extractor(m)
+
     dnames = vcat(StatsModels.termvars.(first(values(design(m)))[1].rhs)...)
-    widgets = Dict(map(((k, v),) -> k => widget(v), collect(d)))
+    value_ranges = Dict((k => value_range(v) for (k, v) in d))
+    widgets = Dict((k => widget(v) for (k, v) in value_ranges))
     menu = D.FlexCol((widgets[n] for n in dnames)...)
+    style_lookup = Dict((k => style_map(v) for (k, v) in value_ranges))
+    mcmap = Makie.wong_colors(0.5)
+    mcolor_lookup = Dict("face" => mcmap[1], "car" => mcmap[2])
     signal = map((widget_value(widgets[n]) for n in dnames)...; ignore_equal_values=true) do widget_values...
         effectDict = Dict(dnames .=> widget_values)
-        return signal_to_lines(effects(effectDict, m), dnames)
+        eff = effects(effectDict, m)
+        return signal_to_lines(filter(x -> x.channel == 1, eff), dnames, style_lookup, mcolor_lookup)
     end
-    f, ax, pl = lines(map(first, signal), color=map(last, signal))
+    points = map(first, signal)
+    color = map(x -> x[2], signal)
+    mcolor = map(x -> x[3], signal)
+    cmap = RGBAf.(Colors.color.(to_colormap(:lighttest)), 0.5)
+    f, ax, pl = lines(points, color=color, colormap=cmap, linewidth=2)
+
+    scatter!(ax, points, marker=map(last, signal), markersize=15, color=mcolor)
     widget_names = [formular_text("0 ~ 1")]
+    Colorbar(f[1, 2], limits=extrema(value_ranges[:continuous]), colormap=cmap, label="continuous")
+    conditions = collect(value_ranges[:condition])
+    elements = map(conditions) do c
+        MarkerElement(marker=style_lookup[:condition](c), color=mcolor_lookup[c])
+    end
+    Legend(f[1, 3], elements, conditions)
     for name in dnames
         push!(widget_names, formular_text("+"), dropdown(name, widgets[name]))
     end
