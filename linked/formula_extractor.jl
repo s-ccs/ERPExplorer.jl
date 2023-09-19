@@ -1,11 +1,14 @@
-using Unfold
-get_sym(t::Unfold.AbstractTerm) = t.sym
-get_sym(t::Unfold.BSplineTerm) = t.term.sym
-get_sym(t::Unfold.InteractionTerm) = ""
-get_sym(t::Unfold.FunctionTerm) = ""
-get_values(t::Unfold.CategoricalTerm) = t.contrasts.levels
-get_values(t::Unfold.BSplineTerm) = get_values(t.term)
-get_values(t::Unfold.ContinuousTerm) = (; min=t.min, max=t.max, var=t.var, mean=t.mean)
+const BSplineTerm = Base.get_extension(Unfold, :UnfoldBSplineKitExt).BSplineTerm
+get_sym(t::InterceptTerm) = ""
+get_sym(t::AbstractTerm) = t.sym
+get_sym(t::BSplineTerm) = t.term.sym
+get_sym(t::InteractionTerm) = ""
+get_sym(t::FunctionTerm) = ""
+get_values(t::InterceptTerm) = (;)
+get_values(t::CategoricalTerm) = t.contrasts.levels
+get_values(t::BSplineTerm) = get_values(t.term)
+get_values(t::ContinuousTerm) = (; min=t.min, max=t.max, var=t.var, mean=t.mean)
+get_values(t::InteractionTerm) = (;)
 
 function extract_variables(model)
     ts = Unfold.formula(model).rhs.terms

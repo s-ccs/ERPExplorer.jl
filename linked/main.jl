@@ -1,12 +1,12 @@
 ### A Pluto.jl notebook ###
 # v0.19.25
 
+Pkg.activate(@__DIR__)
 #=
 using Pkg
 # Somehow I need to redo the project if I want to update the branches
 rm(joinpath(@__DIR__, "Project.toml"))
 rm(joinpath(@__DIR__, "Manifest.toml"))
-Pkg.activate(@__DIR__)
 pkg"add BSplineKit MixedModels"
 pkg"add Unfold@0.5.1 UnfoldSim JSServe Colors DataFrames DataFramesMeta StatsModels StatsBase"
 pkg"add MakieCore#sd/beta-20 Makie#sd/beta-20 WGLMakie#sd/beta-20 AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
@@ -218,5 +218,6 @@ begin
     times = range(0, length=size(dataS, 2), step=1 ./ 100)
     model = Unfold.fit(UnfoldModel, formulaS6, evts, dataS, times)
 
-    App(s-> effects_plot(model))
+    # App(s-> effects_plot(model))
 end
+extract_variables(model)
