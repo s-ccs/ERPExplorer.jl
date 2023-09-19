@@ -8,15 +8,13 @@ rm(joinpath(@__DIR__, "Project.toml"))
 rm(joinpath(@__DIR__, "Manifest.toml"))
 Pkg.activate(@__DIR__)
 pkg"add BSplineKit MixedModels"
-pkg"add Unfold UnfoldSim JSServe Colors DataFrames DataFramesMeta StatsModels StatsBase"
+pkg"add Unfold@0.5.1 UnfoldSim JSServe Colors DataFrames DataFramesMeta StatsModels StatsBase"
 pkg"add MakieCore#sd/beta-20 Makie#sd/beta-20 WGLMakie#sd/beta-20 AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
 pkg"precompile"
 =#
 
 using BSplineKit
 using Unfold
-Unfold.BSplineTerm
-
 using UnfoldMakie
 using UnfoldSim
 using WGLMakie
