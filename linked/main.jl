@@ -1,6 +1,6 @@
 ### A Pluto.jl notebook ###
 # v0.19.25
-
+using Pkg
 Pkg.activate(@__DIR__)
 #=
 using Pkg
@@ -218,6 +218,5 @@ begin
     times = range(0, length=size(dataS, 2), step=1 ./ 100)
     model = Unfold.fit(UnfoldModel, formulaS6, evts, dataS, times)
 
-    # App(s-> effects_plot(model))
+    App(s-> effects_plot(model))
 end
-extract_variables(model)
