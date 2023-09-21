@@ -54,11 +54,11 @@ function widget(values::Set)
 end
 
 function formular_text(content; class="")
-    return DOM.div(content; class="p-1 text-lg font-semibold $(class)")
+    return DOM.div(content; class="px-1 text-lg m-1 font-semibold $(class)")
 end
 
 function dropdown(name, content)
-    return DOM.div(formular_text(name), DOM.div(content; class="dropdown-content"); class="hover:bg-gray-100 dropdown")
+    return DOM.div(formular_text(name), DOM.div(content; class="dropdown-content"); class=" bg-slate-100 hover:bg-lime-100 dropdown")
 end
 
 function style_map(::AbstractRange{<:Number})
@@ -94,7 +94,7 @@ function select_vspan(scene; blocking=false, priority=2, kwargs...)
         high[] = r.origin[1] + r.widths[1]
     end
     plotted_span = vspan!(
-        scene, low, high, visible=false, kwargs..., transparency=true
+        scene, low, high, visible=false, kwargs..., transparency=true, color=(:black, 0.1)
     )
 
     on(events(scene).mousebutton, priority=priority) do event

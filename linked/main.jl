@@ -42,18 +42,22 @@ function signal_to_lines(eff, variables, palette)
     markers = Symbol[]
     mcolor = RGBAf[]
     colors = Float32[]
-    for group in groupby(eff, variables)
+    for group in groupby(eff, first.(variables))
         gpoints = Point2f.(group.time, replace(group.yhat, missing => NaN))
         append!(points, gpoints)
         push!(points, Point2f(NaN))
         N = length(gpoints) + 1
-        var = :continuous
-        cval = group[1, var]
-        append!(colors, fill(palette[var][:color](cval), N))
-        var = :condition
-        conval = group[1, var]
-        append!(markers, fill(palette[var][:marker](conval), N))
-        append!(mcolor, fill(palette[var][:marker_color][conval], N))
+        for (varname, types) in variables
+            if types[3] == :CategoricalTerm
+                conval = group[1, varname]
+                p = palette[varname]
+                append!(markers, fill(p[:marker](conval), N))
+                append!(mcolor, fill(p[:marker_color][conval], N))
+            else
+                cval = group[1, varname]
+                append!(colors, fill(palette[varname][:color](cval), N))
+            end
+        end
     end
     return points, colors, mcolor, markers
 end
@@ -96,7 +100,6 @@ end
 widget_value(w::Vector{<: String}; resolution=1) = w
 widget_value(x::Vector; resolution=1) = x[1]:resolution:x[2]
 
-
 """
     formular_widgets(model_variables)
 
@@ -106,7 +109,7 @@ Return values:
 * `formular_widget`: The HTML element that can be displayed to interact with the the widgets
 * `value_ranges`: A dictionary with the value ranges of each variable.
 """
-function formular_widgets(variables)
+function formular_widgets(variables, formular)
     value_ranges = [k => value_range(v) for (k, v) in variables]
     widgets = [k => widget(v) for (k, v) in value_ranges]
     widget_names = [formular_text("0 ~ 1")]
@@ -128,8 +131,11 @@ end
 
 
 function effects_plot(model)
+    # TODO, pass formular, or extract it from model?
+    # Likely `[Any][1]`` isn't the generic way to do this in any case.
+    formular = Unfold.formula(model)
     variables = extract_variables(model)
-    widget_signal, widget_dom, value_ranges = formular_widgets(variables)
+    widget_signal, widget_dom, value_ranges = formular_widgets(variables, formular)
 
     # TODO: make this more easily stylable, with clearer mappings from variables to styles
     palettes = Dict(k => style_map(v) for (k, v) in value_ranges)
@@ -148,15 +154,22 @@ function effects_plot(model)
     line_signal = lift(effects_signal) do eff
         # TODO, use Observable{Plot} from https://github.com/MakieOrg/Makie.jl/pull/2868
         # Would also be nice to turn this into a recipe?
-        return signal_to_lines(filter(x -> x.channel == 1, eff), first.(variables), palettes)
+        return signal_to_lines(filter(x -> x.channel == 1, eff), variables, palettes)
     end
 
     points = lift(first, line_signal)
     color = lift(x -> x[2], line_signal)
     mcolor = lift(x -> x[3], line_signal)
-    cmap = palettes[:continuous][:colormap]
-    f, ax, pl = lines(points, color=color, colormap=cmap, linewidth=2, highclip=:red, lowclip=:blue)
-    scatter!(ax, points, marker=lift(last, line_signal), markersize=5, color=mcolor)
+    cvar = filter(x-> x[2][3] == :ContinuousTerm, variables)
+    f = Figure()
+    ax = Axis(f[1, 1])
+    if !isempty(cvar)
+        cmap = palettes[first(cvar)[1]][:colormap]
+        lines!(ax, points, color=color, colormap=cmap, linewidth=2, highclip=:red, lowclip=:blue)
+    end
+    marker = lift(last, line_signal)
+    @show length(points[]) @show length(mcolor[]) typeof(mcolor[]) typeof(marker[]) length(marker[])
+    scatter!(ax, points, marker=marker, markersize=5, color=mcolor)
     ax.xrectzoom = false
     ax.yrectzoom = false
 
@@ -191,7 +204,7 @@ function effects_plot(model)
         legend_slot[1, i] = legend
     end
 
-    return DOM.div(Asset("style.css"), D.FlexCol(widget_dom, f))
+    return DOM.div(Asset("style.css"), JSServe.TailwindCSS, D.FlexCol(widget_dom, f))
 end
 
 function gen_data()
@@ -211,12 +224,16 @@ function gen_data()
     return dataS, evts
 end
 
+
 begin
     # Model selection - not sure where that will happen. Via routes? Via another GUI?
-    formulaS6 = @formula(0 ~ 1 + condition * continuous)
+    # formulaS = @formula(0 ~ 1 + condition * continuous)
+    formulaS = @formula(0 ~ 1 + condition + condition3 + condition4)
+    # formulaS = @formula(0 ~ 1 + continuous)
+    # formulaS = @formula(0 ~ 1 + condition)
     dataS, evts = gen_data()
     times = range(0, length=size(dataS, 2), step=1 ./ 100)
-    model = Unfold.fit(UnfoldModel, formulaS6, evts, dataS, times)
+    model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
     App(s-> effects_plot(model))
 end
