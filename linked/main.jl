@@ -1,5 +1,4 @@
-### A Pluto.jl notebook ###
-# v0.19.25
+
 using Pkg
 Pkg.activate(@__DIR__)
 #=
@@ -8,8 +7,8 @@ using Pkg
 rm(joinpath(@__DIR__, "Project.toml"))
 rm(joinpath(@__DIR__, "Manifest.toml"))
 pkg"add BSplineKit MixedModels"
-pkg"add Unfold@0.5.1 UnfoldSim JSServe Colors DataFrames DataFramesMeta StatsModels StatsBase"
-pkg"add MakieCore#sd/beta-20 Makie#sd/beta-20 WGLMakie#sd/beta-20 AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
+pkg"add JSServe#sd/fixes Unfold UnfoldSim Colors DataFrames DataFramesMeta StatsModels StatsBase"
+pkg"add MakieCore#sd/blockspec Makie#sd/blockspec WGLMakie#sd/blockspec AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
 pkg"precompile"
 =#
 
@@ -236,4 +235,39 @@ begin
     model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
     App(s-> effects_plot(model))
+end
+
+import Makie.PlotSpecApi as P
+
+function create_plot(effDict)
+    f = P.Figure()
+    for r = 1:length(effDict[:condition])
+        for c = 1:length(effDict[:condition2])
+            ax = P.Axis(f[r, c])
+            sub = subset(effects_signal, :condition2 => x -> x .== effDict[:condition2][c], :condition => x -> x .== effDict[:condition][r])
+            P.lines(ax, sub.time, sub.yhat; color=sub.condition3 .== "cat", linestyle=sub.condition4)
+        end
+    end
+    retif
+end
+
+begin
+
+    formulaS6 = @formula(0 ~ 1 + condition + condition2 + condition3+condition4)
+    dataS, evts = gen_data()
+    times = range(0, length=size(dataS, 2), step=1 ./ 100)
+    model = Unfold.fit(UnfoldModel, formulaS6, evts, dataS, times)
+    ev = extract_variables(model)
+    effDict =  Dict([e[1] => e[2][4] for e in ev])
+    effects_signal = effects(effDict, model)
+
+    f = P.Figure()
+    for r = 1:length(effDict[:condition])
+        for c = 1:length(effDict[:condition2])
+            ax = P.Axis(f[r, c])
+            sub = subset(effects_signal, :condition2 => x->x.== effDict[:condition2][c], :condition => x -> x.== effDict[:condition][r])
+            P.lines(ax,sub.time,sub.yhat;color=sub.condition3.=="cat",linestyle=sub.condition4)
+        end
+    end
+    f
 end
