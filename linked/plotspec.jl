@@ -1,14 +1,12 @@
-
 using Pkg
 Pkg.activate(@__DIR__)
 #=
-using Pkg
 # Somehow I need to redo the project if I want to update the branches
 rm(joinpath(@__DIR__, "Project.toml"))
 rm(joinpath(@__DIR__, "Manifest.toml"))
-pkg"add BSplineKit MixedModels"
-pkg"add JSServe#sd/fixes Unfold UnfoldSim Colors DataFrames DataFramesMeta StatsModels StatsBase"
-pkg"add MakieCore#sd/blockspec Makie#sd/blockspec WGLMakie#sd/blockspec AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
+pkg"add BSplineKit"
+pkg"add Unfold UnfoldSim JSServe#sd/fixes Colors DataFrames DataFramesMeta StatsModels StatsBase"
+pkg"add MakieCore#sd/beta-20 Makie#sd/beta-20 GLMakie#sd/beta-20 WGLMakie#sd/beta-20 AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
 pkg"precompile"
 =#
 
@@ -25,26 +23,38 @@ using DataFramesMeta
 using StatsModels
 using StatsBase
 import JSServe.TailwindDashboard as D
-import Makie.PlotspecApi as PA
+import Makie.SpecApi as S
 
 include("widgets.jl")
 include("formula_extractor.jl")
 
 
 function variable_legend(f, name, values::AbstractRange{<:Number}, palettes)
-    cmap = palettes[name][:colormap]
-    return PA.Colorbar(f, limits=extrema(values), colormap=cmap, label=string(name))
+    range, cmap = palettes[name][:colormap]
+    return S.Colorbar(f, limits=range, colormap=cmap, label=string(name))
 end
 
 function variable_legend(f, name, values::Set, palettes)
     palette = palettes[name]
-    marker_color_lookup = palette[:marker_color]
-    marker_lookup = palette[:marker]
+    marker_color_lookup = (x) -> begin
+        if haskey(palette, :color)
+            return palette[:color][x]
+        else
+            return :black
+        end
+    end
+    marker_lookup = (x) -> begin
+        if haskey(palette, :marker)
+            return palette[:marker][x]
+        else
+            return :rect
+        end
+    end
     conditions = collect(values)
     elements = map(conditions) do c
-        return MarkerElement(marker=marker_lookup(c), color=marker_color_lookup[c])
+        return MarkerElement(marker=marker_lookup(c), color=marker_color_lookup(c))
     end
-    return PA.Legend(f, elements, conditions)
+    return S.Legend(f, elements, conditions)
 end
 
 
@@ -97,6 +107,16 @@ function formular_widgets(variables, formular)
     return widget_signal, formular_widget, value_ranges
 end
 
+function effects_signal(model, widget_signal)
+    effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
+    on(widget_signal; update=true) do widget_values
+        effect_dict = Dict(k => widget_value(wv) for (k, wv) in widget_values)
+        eff = effects(effect_dict, model)
+        filter!(x -> x.channel == 1, eff)
+        effects_signal[] = eff
+    end
+    return effects_signal
+end
 
 function gen_data()
     d1, evts = UnfoldSim.predef_eeg(noiselevel=25; return_epoched=true)
@@ -116,46 +136,82 @@ function gen_data()
 end
 
 
-function create_plot(effDict, value_ranges)
-    f = PA.Figure()
-    for r in 1:length(unique(effDict[!, :condition]))
-        for c in 1:length(unique(effDict[!, :condition2]))
-            ax = PA.Axis(f[r, c])
-            sub = subset(effDict, :condition2 => x -> x .== effDict[!, :condition2][c], :condition => x -> x .== effDict[!, :condition][r])
-            PA.lines(ax, Point2f.(sub.time, sub.yhat); color=sub.condition3 .== "cat")
+function plot_data(data, value_ranges, categorical_vars, continuous_vars)
+    fig = S.Figure()
+    mpalette = [:circle, :star4, :xcross, :diamond]
+    cpalette = Makie.wong_colors()
+    cat_styles = [:color => cpalette, :marker => mpalette]
+    cat_values = [unique(data[!, cat]) for cat in categorical_vars]
+    scatter_styles = [cat => (style[1] => Dict(zip(vals, style[2]))) for (style, vals, cat) in zip(cat_styles, cat_values, categorical_vars)]
+
+    continous_styles = [:colormap => :viridis, :colormap => :heat]
+    continuous_values = [extrema(data[!, con]) for con in continuous_vars]
+    line_styles = [cat => (style[1] => (val, style[2])) for (style, val, cat) in zip(continous_styles, continuous_values, continuous_vars)]
+
+    function create_plot!(ax, data, catvars, vars)
+        selector = [(name => x -> x .== var) for (name, var) in zip(catvars, vars)]
+        sub = subset(data, selector...)
+        points = Point2f.(sub.time, sub.yhat)
+        args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
+        S.scatter!(ax, points; markersize=10, args...)
+        line_args = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
+        line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
+        line_args3 = [:color => sub[!, name] for name in continuous_vars]
+        S.lines!(ax, points; line_args..., line_args2..., line_args3...)
+    end
+
+    gridmax = 1
+    legend_entries = []
+    if length(categorical_vars) >= 2
+        cat1 = categorical_vars[end]
+        cat2 = categorical_vars[end-1]
+        values1 = cat_values[end]
+        values2 = cat_values[end-1]
+        gridmax = length(values1)
+        append!(legend_entries, value_ranges[1:end-2])
+        for (i, catval1) in enumerate(values1)
+            for (k, catval2) in enumerate(values2)
+                ax = S.Axis(fig[k, i]; title="$cat1: $catval1, $cat2: $catval2")
+                subdata = subset(data, cat1 => x -> x .== catval1, cat2 => x -> x .== catval2)
+                for vars in Iterators.product(cat_values[1:end-2]...)
+                    create_plot!(ax, subdata, categorical_vars[1:end-2], vars)
+                end
+            end
+        end
+    else
+        append!(legend_entries, value_ranges)
+        ax = S.Axis(fig[1, 1])
+        for vars in Iterators.product(cat_values...)
+            create_plot!(ax, categorical_vars, vars)
         end
     end
-    # TODO, creating legends!
-    return f
+
+    palettes = Dict(map(((k, v),) -> k => Dict(v), vcat(line_styles, scatter_styles)))
+    for (i, (k, v)) in enumerate(legend_entries)
+        variable_legend(fig[1, gridmax+i], k, v, palettes)
+    end
+    fig
 end
 
-begin
-    # Model selection - not sure where that will happen. Via routes? Via another GUI?
-    # formulaS = @formula(0 ~ 1 + condition * continuous)
-    formulaS = @formula(0 ~ 1 + condition + condition2 + condition3 + condition4)
-    # formulaS = @formula(0 ~ 1 + continuous)
-    # formulaS = @formula(0 ~ 1 + condition)
+
+App() do
+    formulaS = @formula(0 ~ 1 + condition2 + continuous + condition3 + condition4)
     dataS, evts = gen_data()
     times = range(0, length=size(dataS, 2), step=1 ./ 100)
     model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
-end
-
-App() do s
-    # TODO, pass formular, or extract it from model?
-    # Likely `[Any][1]`` isn't the generic way to do this in any case.
     formular = Unfold.formula(model)
     variables = extract_variables(model)
     widget_signal, widget_dom, value_ranges = formular_widgets(variables, formular)
-
-    effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
-    on(s, widget_signal; update=true) do widget_values
-        effect_dict = Dict(k => widget_value(wv) for (k, wv) in widget_values)
-        eff = effects(effect_dict, model)
-        filter!(x-> x.channel==1 , eff)
-        effects_signal[] = eff
+    eff_signal = effects_signal(model, widget_signal)
+    varnames = first.(variables)
+    var_types = map(x -> x[2][3], variables)
+    obs = Observable(S.Figure())
+    Makie.on_latest(eff_signal; update=true) do eff
+        var_types = map(x -> x[2][3], variables)
+        obs[] = plot_data(eff, value_ranges, varnames[var_types.==:CategoricalTerm], varnames[var_types.==:ContinuousTerm])
+        return
     end
-    obs = lift(create_plot, s, effects_signal, value_ranges)
-    fig = Makie.update_fig(Figure(), obs)
-    style = Asset(joinpath(@__DIR__, "..", "style.css"))
-    return DOM.div(style, JSServe.TailwindCSS, widget_dom, fig)
-end |> display
+    css = Asset(joinpath(@__DIR__, "..", "style.css"))
+    fig = plot(obs; figure=(size=(1000, 1000),))
+    return DOM.div(css, JSServe.TailwindCSS, widget_dom, fig)
+end

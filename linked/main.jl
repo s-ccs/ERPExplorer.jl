@@ -167,7 +167,6 @@ function effects_plot(model)
         lines!(ax, points, color=color, colormap=cmap, linewidth=2, highclip=:red, lowclip=:blue)
     end
     marker = lift(last, line_signal)
-    @show length(points[]) @show length(mcolor[]) typeof(mcolor[]) typeof(marker[]) length(marker[])
     scatter!(ax, points, marker=marker, markersize=5, color=mcolor)
     ax.xrectzoom = false
     ax.yrectzoom = false
