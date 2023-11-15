@@ -5,8 +5,8 @@ Pkg.activate(@__DIR__)
 rm(joinpath(@__DIR__, "Project.toml"))
 rm(joinpath(@__DIR__, "Manifest.toml"))
 pkg"add BSplineKit"
-pkg"add Unfold UnfoldSim JSServe#sd/fixes Colors DataFrames DataFramesMeta StatsModels StatsBase"
 pkg"add MakieCore#sd/beta-20 Makie#sd/beta-20 GLMakie#sd/beta-20 WGLMakie#sd/beta-20 AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
+pkg"add Unfold UnfoldSim JSServe Colors DataFrames DataFramesMeta StatsModels StatsBase"
 pkg"precompile"
 =#
 
@@ -29,16 +29,16 @@ include("widgets.jl")
 include("formula_extractor.jl")
 
 
-function variable_legend(f, name, values::AbstractRange{<:Number}, palettes)
+function variable_legend(name, values::AbstractRange{<:Number}, palettes)
     range, cmap = palettes[name][:colormap]
-    return S.Colorbar(f, limits=range, colormap=cmap, label=string(name))
+    return S.Colorbar(limits=range, colormap=cmap, label=string(name))
 end
 
-function variable_legend(f, name, values::Set, palettes)
+function variable_legend(name, values::Set, palettes)
     palette = palettes[name]
     marker_color_lookup = (x) -> begin
         if haskey(palette, :color)
-            return palette[:color][x]
+            return get(palette[:color], x, :black)
         else
             return :black
         end
@@ -54,29 +54,11 @@ function variable_legend(f, name, values::Set, palettes)
     elements = map(conditions) do c
         return MarkerElement(marker=marker_lookup(c), color=marker_color_lookup(c))
     end
-    return S.Legend(f, elements, conditions)
-end
-
-
-"""
-    variable_legends(figure, value_ranges, palettes)
-
-Creates a fitting legend for each variable.
-The returned dictioary with legends can be placed into any plot by assigning it to a layout position:
-```julia
-legends = variable_legends(figure, value_ranges, palettes)
-figure[1, 2] = legends[:continous]
-```
-"""
-function variable_legends(figure, value_ranges, palettes)
-    legends = map(value_ranges) do (k, v)
-        return k => variable_legend(figure, k, v, palettes)
-    end
-    return Dict(legends)
+    return S.Legend(elements, conditions)
 end
 
 widget_value(w::Vector{<:String}; resolution=1) = w
-widget_value(x::Vector; resolution=1) = x[1]:resolution:x[2]
+widget_value(x::Vector; resolution=1) = Float64(x[1]):0.5:Float64(x[end])
 
 """
     formular_widgets(model_variables)
@@ -137,7 +119,6 @@ end
 
 
 function plot_data(data, value_ranges, categorical_vars, continuous_vars)
-    fig = S.Figure()
     mpalette = [:circle, :star4, :xcross, :diamond]
     cpalette = Makie.wong_colors()
     cat_styles = [:color => cpalette, :marker => mpalette]
@@ -148,16 +129,17 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
     line_styles = [cat => (style[1] => (val, style[2])) for (style, val, cat) in zip(continous_styles, continuous_values, continuous_vars)]
 
-    function create_plot!(ax, data, catvars, vars)
+    function create_plot!(plots, data, catvars, vars)
         selector = [(name => x -> x .== var) for (name, var) in zip(catvars, vars)]
         sub = subset(data, selector...)
         points = Point2f.(sub.time, sub.yhat)
         args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
-        S.scatter!(ax, points; markersize=10, args...)
         line_args = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
         line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
         line_args3 = [:color => sub[!, name] for name in continuous_vars]
-        S.lines!(ax, points; line_args..., line_args2..., line_args3...)
+        push!(plots, S.Scatter(points; markersize=10, args...))
+        push!(plots, S.Lines(points;line_args..., line_args2..., line_args3...))
+        return
     end
 
     gridmax = 1
@@ -168,34 +150,36 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
         values1 = cat_values[end]
         values2 = cat_values[end-1]
         gridmax = length(values1)
-        append!(legend_entries, value_ranges[1:end-2])
+        var_values = [categorical_vars[1:end-2] .=> Set.(cat_values[1:end-2]); map(n-> n=> 1:1, continuous_vars);]
+        append!(legend_entries, var_values)
+        axes = Matrix{Makie.BlockSpec}(undef, length(values1), length(values2))
         for (i, catval1) in enumerate(values1)
             for (k, catval2) in enumerate(values2)
-                ax = S.Axis(fig[k, i]; title="$cat1: $catval1, $cat2: $catval2")
+                plots = PlotSpec[]
                 subdata = subset(data, cat1 => x -> x .== catval1, cat2 => x -> x .== catval2)
                 for vars in Iterators.product(cat_values[1:end-2]...)
-                    create_plot!(ax, subdata, categorical_vars[1:end-2], vars)
+                    create_plot!(plots, subdata, categorical_vars[1:end-2], vars)
                 end
+                axes[i, k] = S.Axis(; title="$cat1: $catval1, $cat2: $catval2", plots=plots)
             end
         end
     else
         append!(legend_entries, value_ranges)
-        ax = S.Axis(fig[1, 1])
+        plots = PlotSpec[]
         for vars in Iterators.product(cat_values...)
-            create_plot!(ax, categorical_vars, vars)
+            create_plot!(plots, data, categorical_vars, vars)
         end
+        axes = [S.Axis(; plots=plots)]
     end
-
     palettes = Dict(map(((k, v),) -> k => Dict(v), vcat(line_styles, scatter_styles)))
-    for (i, (k, v)) in enumerate(legend_entries)
-        variable_legend(fig[1, gridmax+i], k, v, palettes)
+    legends = map(legend_entries) do (k, v)
+        return variable_legend(k, v, palettes)
     end
-    fig
+    return S.Figure(S.GridLayout([(1, 1)=> S.GridLayout(axes), (:, 2) => S.GridLayout(legends)]))
 end
 
-
 App() do
-    formulaS = @formula(0 ~ 1 + condition2 + continuous + condition3 + condition4)
+    formulaS = @formula(0 ~ 1 + condition3 + condition2 + continuous + continuous3)
     dataS, evts = gen_data()
     times = range(0, length=size(dataS, 2), step=1 ./ 100)
     model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
@@ -206,9 +190,12 @@ App() do
     varnames = first.(variables)
     var_types = map(x -> x[2][3], variables)
     obs = Observable(S.Figure())
+    l = Base.ReentrantLock()
     Makie.on_latest(eff_signal; update=true) do eff
-        var_types = map(x -> x[2][3], variables)
-        obs[] = plot_data(eff, value_ranges, varnames[var_types.==:CategoricalTerm], varnames[var_types.==:ContinuousTerm])
+        lock(l) do
+            var_types = map(x -> x[2][3], variables)
+            obs[] = plot_data(eff, value_ranges, varnames[var_types.==:CategoricalTerm], varnames[var_types.==:ContinuousTerm])
+        end
         return
     end
     css = Asset(joinpath(@__DIR__, "..", "style.css"))
