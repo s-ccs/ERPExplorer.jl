@@ -175,7 +175,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
     legends = map(legend_entries) do (k, v)
         return variable_legend(k, v, palettes)
     end
-    return S.Figure(S.GridLayout([(1, 1)=> S.GridLayout(axes), (:, 2) => S.GridLayout(legends)]))
+    return S.GridLayout([(1, 1)=> S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
 end
 
 App() do
@@ -189,7 +189,7 @@ App() do
     eff_signal = effects_signal(model, widget_signal)
     varnames = first.(variables)
     var_types = map(x -> x[2][3], variables)
-    obs = Observable(S.Figure())
+    obs = Observable(S.GridLayout())
     l = Base.ReentrantLock()
     Makie.on_latest(eff_signal; update=true) do eff
         lock(l) do

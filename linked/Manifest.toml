@@ -37,7 +37,7 @@ weakdeps = ["StaticArrays"]
 
 [[deps.AlgebraOfGraphics]]
 deps = ["Colors", "Dates", "Dictionaries", "FileIO", "GLM", "GeoInterface", "GeometryBasics", "GridLayoutBase", "KernelDensity", "Loess", "Makie", "PlotUtils", "PooledArrays", "PrecompileTools", "RelocatableFolders", "StatsBase", "StructArrays", "Tables"]
-git-tree-sha1 = "0d844413bea85caaab2f0303288f04866bded9e9"
+git-tree-sha1 = "353b651d669dcbb59d21366cf2fd840356ec8c76"
 repo-rev = "sd/beta-0.20"
 repo-url = "https://github.com/MakieOrg/AlgebraOfGraphics.jl.git"
 uuid = "cbdf2221-f076-402e-a563-3d30da359d67"
@@ -484,9 +484,9 @@ version = "2.2.4+0"
 
 [[deps.Effects]]
 deps = ["Combinatorics", "DataFrames", "Distributions", "ForwardDiff", "LinearAlgebra", "Statistics", "StatsAPI", "StatsBase", "StatsModels", "Tables"]
-git-tree-sha1 = "40c47694bc3ff8d8c4cb34d777db2baaa5c872d2"
+git-tree-sha1 = "457765ab020f6f1d9566ce063355374c7f84ed1a"
 uuid = "8f03c58b-bd97-4933-a826-f71b64d2cca2"
-version = "1.1.0"
+version = "1.1.1"
 weakdeps = ["GLM", "MixedModels"]
 
     [deps.Effects.extensions]
@@ -691,7 +691,7 @@ version = "1.9.0"
 
 [[deps.GLMakie]]
 deps = ["ColorTypes", "Colors", "FileIO", "FixedPointNumbers", "FreeTypeAbstraction", "GLFW", "GeometryBasics", "LinearAlgebra", "Makie", "Markdown", "MeshIO", "ModernGL", "Observables", "PrecompileTools", "Printf", "ShaderAbstractions", "StaticArrays"]
-git-tree-sha1 = "dcee51bfa3b13648ffaf1451560c772dfcfc0bd3"
+git-tree-sha1 = "2d4689b346f637bb894e3a5ae6fce6edab530db2"
 repo-rev = "sd/beta-20"
 repo-subdir = "GLMakie"
 repo-url = "https://github.com/MakieOrg/Makie.jl.git"
@@ -742,9 +742,9 @@ version = "1.3.14+0"
 
 [[deps.GridLayoutBase]]
 deps = ["GeometryBasics", "InteractiveUtils", "Observables"]
-git-tree-sha1 = "f57a64794b336d4990d90f80b147474b869b1bc4"
+git-tree-sha1 = "af13a277efd8a6e716d79ef635d5342ccb75be61"
 uuid = "3955a311-db13-416c-9275-1d80ed98e5e9"
-version = "0.9.2"
+version = "0.10.0"
 
 [[deps.Grisu]]
 git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
@@ -1182,7 +1182,7 @@ version = "0.5.11"
 
 [[deps.Makie]]
 deps = ["Animations", "Base64", "CRC32c", "ColorBrewer", "ColorSchemes", "ColorTypes", "Colors", "Contour", "DelaunayTriangulation", "Distributions", "DocStringExtensions", "Downloads", "FFMPEG_jll", "FileIO", "FilePaths", "FixedPointNumbers", "Formatting", "FreeType", "FreeTypeAbstraction", "GeometryBasics", "GridLayoutBase", "ImageIO", "InteractiveUtils", "IntervalSets", "Isoband", "KernelDensity", "LaTeXStrings", "LinearAlgebra", "MacroTools", "MakieCore", "Markdown", "MathTeXEngine", "Observables", "OffsetArrays", "Packing", "PlotUtils", "PolygonOps", "PrecompileTools", "Printf", "REPL", "Random", "RelocatableFolders", "Setfield", "ShaderAbstractions", "Showoff", "SignedDistanceFields", "SparseArrays", "StableHashTraits", "Statistics", "StatsBase", "StatsFuns", "StructArrays", "TriplotBase", "UnicodeFun"]
-git-tree-sha1 = "1f10a0c4678da11359c6d9634f50fe15794fb76c"
+git-tree-sha1 = "325e1b9c6c512ac6919f13708ac9d74f0ee191a5"
 repo-rev = "sd/beta-20"
 repo-url = "https://github.com/MakieOrg/Makie.jl.git"
 uuid = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
@@ -1190,7 +1190,7 @@ version = "0.20.0"
 
 [[deps.MakieCore]]
 deps = ["Observables", "REPL"]
-git-tree-sha1 = "42f55e82ddce3b84cdf185a25280a05e574561a9"
+git-tree-sha1 = "65123f52805f503af5bf2d89349a4b1ebf99b196"
 repo-rev = "sd/beta-20"
 repo-subdir = "MakieCore"
 repo-url = "https://github.com/MakieOrg/Makie.jl.git"
@@ -2083,7 +2083,7 @@ version = "0.6.3"
 
 [[deps.UnfoldMakie]]
 deps = ["AlgebraOfGraphics", "CategoricalArrays", "ColorSchemes", "ColorTypes", "Colors", "CoordinateTransformations", "DataFrames", "DataStructures", "GeometryBasics", "GridLayoutBase", "ImageFiltering", "LinearAlgebra", "Makie", "SparseArrays", "StaticArrays", "Statistics", "TopoPlots", "Unfold"]
-git-tree-sha1 = "dbb77433eed10af2d434b79d3cdc07968f453479"
+git-tree-sha1 = "6b4fec40c1c74293db4294b8fa6dd72bc2170af1"
 repo-rev = "patch-1"
 repo-url = "https://github.com/SimonDanisch/UnfoldMakie.jl"
 uuid = "69a5ce3b-64fb-4f22-ae69-36dd4416af2a"
@@ -2132,7 +2132,7 @@ version = "1.2.0"
 
 [[deps.WGLMakie]]
 deps = ["Colors", "FileIO", "FreeTypeAbstraction", "GeometryBasics", "Hyperscript", "JSServe", "LinearAlgebra", "Makie", "Observables", "PNGFiles", "PrecompileTools", "RelocatableFolders", "ShaderAbstractions", "StaticArrays"]
-git-tree-sha1 = "0dc7ecd4146d1d84c945959492231dab5a056dd0"
+git-tree-sha1 = "0c9b86a52aa80be169c1ef7a1b58347632a0be89"
 repo-rev = "sd/beta-20"
 repo-subdir = "WGLMakie"
 repo-url = "https://github.com/MakieOrg/Makie.jl.git"
