@@ -92,8 +92,15 @@ end
 function effects_signal(model, widget_signal)
     effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
     on(widget_signal; update=true) do widget_values
-        effect_dict = Dict(k => widget_value(wv) for (k, wv) in widget_values)
+        @show widget_values
+        effect_dict = Dict(k => widget_value(wv) for (k, wv) in widget_values if !isempty(wv))
         eff = effects(effect_dict, model)
+        for (k, wv) in widget_values
+            if isempty(wv)
+                eff[!,k] .= "typical_value"
+            end
+        end
+
         filter!(x -> x.channel == 1, eff)
         effects_signal[] = eff
     end
@@ -124,7 +131,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
     cat_styles = [:color => cpalette, :marker => mpalette]
     cat_values = [unique(data[!, cat]) for cat in categorical_vars]
     scatter_styles = [cat => (style[1] => Dict(zip(vals, style[2]))) for (style, vals, cat) in zip(cat_styles, cat_values, categorical_vars)]
-
+    @show scatter_styles
     continous_styles = [:colormap => :viridis, :colormap => :heat]
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
     line_styles = [cat => (style[1] => (val, style[2])) for (style, val, cat) in zip(continous_styles, continuous_values, continuous_vars)]
@@ -186,6 +193,7 @@ App() do
     formular = Unfold.formula(model)
     variables = extract_variables(model)
     widget_signal, widget_dom, value_ranges = formular_widgets(variables, formular)
+    
     eff_signal = effects_signal(model, widget_signal)
     varnames = first.(variables)
     var_types = map(x -> x[2][3], variables)
@@ -199,6 +207,6 @@ App() do
         return
     end
     css = Asset(joinpath(@__DIR__, "..", "style.css"))
-    fig = plot(obs; figure=(size=(1000, 1000),))
+    fig = plot(obs; figure=(size=(500, 500),))
     return DOM.div(css, JSServe.TailwindCSS, widget_dom, fig)
 end
