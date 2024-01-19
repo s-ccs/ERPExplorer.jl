@@ -24,11 +24,11 @@ include("widgets.jl")
 
 
 
-function explore(model::UnfoldModel)
+function explore(model::UnfoldModel; size=(500, 500))
     App() do
-        formular = Unfold.formula(model)
+        #formular = Unfold.formula(model)
         variables = extract_variables(model)
-        widget_signal, widget_dom, value_ranges = formular_widgets(variables, formular)
+        widget_signal, widget_dom, value_ranges = formular_widgets(variables)
 
         eff_signal = effects_signal(model, widget_signal)
         varnames = first.(variables)
@@ -43,7 +43,7 @@ function explore(model::UnfoldModel)
             return
         end
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
-        fig = plot(obs; figure=(size=(500, 500),))
+        fig = plot(obs; figure=(size=size,))
         return DOM.div(css, Bonito.TailwindCSS, widget_dom, fig)
     end
 end
