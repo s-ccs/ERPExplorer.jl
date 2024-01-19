@@ -31,11 +31,12 @@ function value_range(args)
     if (type == :ContinuousTerm) || (type == :BSplineTerm)
         mini = round(Int, default_values.min)
         maxi = round(Int, default_values.max)
-        if (maxi - mini) < 2
-            return mini:0.1:maxi
-        else
-            return mini:maxi
-        end
+        #if (maxi - mini) < 2
+        #return mini:0.1:maxi
+        #else
+        #return mini:maxi
+        return range(mini, maxi, length=5)
+        #end
     elseif type == :CategoricalTerm
         return Set(default_values)
     else
@@ -44,9 +45,9 @@ function value_range(args)
 end
 
 function widget(range::AbstractRange{<:Number})
-    @show range
+
     range_slider = RangeSlider(range; value=Any[minimum(range), maximum(range)])
-    @show range_slider
+
     range_slider.ticks[] = Dict(
         "mode" => "range",
         "density" => 10

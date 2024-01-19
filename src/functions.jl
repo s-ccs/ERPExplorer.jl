@@ -27,7 +27,7 @@ function variable_legend(name, values::Set, palettes)
 end
 
 widget_value(w::Vector{<:String}; resolution=1) = w
-widget_value(x::Vector; resolution=1) = Float64(x[1]):0.5:Float64(x[end])
+widget_value(x::Vector; resolution=1) = x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length=5)
 
 """
     formular_widgets(model_variables)
@@ -38,7 +38,7 @@ Return values:
 * `formular_widget`: The HTML element that can be displayed to interact with the the widgets
 * `value_ranges`: A dictionary with the value ranges of each variable.
 """
-function formular_widgets(variables, formular)
+function formular_widgets(variables)
     value_ranges = [k => value_range(v) for (k, v) in variables]
     widgets = [k => widget(v) for (k, v) in value_ranges]
     widget_names = [formular_text("0 ~ 1")]
@@ -61,8 +61,9 @@ end
 function effects_signal(model, widget_signal)
     effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
     on(widget_signal; update=true) do widget_values
-        @show widget_values
         effect_dict = Dict(k => widget_value(wv) for (k, wv) in widget_values if !isempty(wv))
+        @debug widget_values
+        @debug effect_dict
         eff = effects(effect_dict, model)
         for (k, wv) in widget_values
             if isempty(wv)
@@ -84,10 +85,10 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
     cat_styles = [:color => cpalette, :marker => mpalette]
     cat_values = [unique(data[!, cat]) for cat in categorical_vars]
     scatter_styles = [cat => (style[1] => Dict(zip(vals, style[2]))) for (style, vals, cat) in zip(cat_styles, cat_values, categorical_vars)]
-    @show scatter_styles
-    continous_styles = [:colormap => :viridis, :colormap => :heat]
+    @debug scatter_styles
+    continous_styles = [:viridis, :heat, :RdBu]
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
-    line_styles = [cat => (style[1] => (val, style[2])) for (style, val, cat) in zip(continous_styles, continuous_values, continuous_vars)]
+    line_styles = [cat => (:colormap => (val, style)) for (style, val, cat) in zip(continous_styles, continuous_values, continuous_vars)]
 
     function create_plot!(plots, data, catvars, vars)
         selector = [(name => x -> x .== var) for (name, var) in zip(catvars, vars)]
@@ -104,7 +105,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
 
     gridmax = 1
     legend_entries = []
-    if length(categorical_vars) >= 2
+    if length(categorical_vars) > 2
         cat1 = categorical_vars[end]
         cat2 = categorical_vars[end-1]
         values1 = cat_values[end]
