@@ -1,34 +1,3 @@
-using Pkg
-Pkg.activate(@__DIR__)
-#=
-# Somehow I need to redo the project if I want to update the branches
-rm(joinpath(@__DIR__, "Project.toml"))
-rm(joinpath(@__DIR__, "Manifest.toml"))
-pkg"add BSplineKit"
-pkg"add MakieCore#sd/beta-20 Makie#sd/beta-20 GLMakie#sd/beta-20 WGLMakie#sd/beta-20 AlgebraOfGraphics#sd/beta-0.20 TopoPlots#sd/beta-20 https://github.com/SimonDanisch/UnfoldMakie.jl#patch-1"
-pkg"add Unfold UnfoldSim JSServe Colors DataFrames DataFramesMeta StatsModels StatsBase"
-pkg"precompile"
-=#
-
-using BSplineKit
-using Unfold
-using UnfoldMakie
-using UnfoldSim
-using WGLMakie
-using JSServe
-using Random
-using Colors
-using DataFrames
-using DataFramesMeta
-using StatsModels
-using StatsBase
-import JSServe.TailwindDashboard as D
-import Makie.SpecApi as S
-
-include("widgets.jl")
-include("formula_extractor.jl")
-
-
 function variable_legend(name, values::AbstractRange{<:Number}, palettes)
     range, cmap = palettes[name][:colormap]
     return S.Colorbar(limits=range, colormap=cmap, label=string(name))
@@ -97,7 +66,7 @@ function effects_signal(model, widget_signal)
         eff = effects(effect_dict, model)
         for (k, wv) in widget_values
             if isempty(wv)
-                eff[!,k] .= "typical_value"
+                eff[!, k] .= "typical_value"
             end
         end
 
@@ -107,22 +76,6 @@ function effects_signal(model, widget_signal)
     return effects_signal
 end
 
-function gen_data()
-    d1, evts = UnfoldSim.predef_eeg(noiselevel=25; return_epoched=true)
-    dataS = permutedims(repeat(d1, 1, 1, 64), (3, 1, 2))
-    dataS = dataS .+ rand(dataS)
-
-    evts = insertcols(evts,
-        :continuous2 => rand(nrow(evts)),
-        :continuous3 => rand(nrow(evts)),
-        :continuous4 => rand(nrow(evts)),
-        :continuous5 => rand(nrow(evts)), :condition2 => shuffle(repeat(["string1", "string2"], outer=div(nrow(evts), 2))),
-        :condition3 => shuffle(repeat(["cat", "dog"], outer=div(nrow(evts), 2))),
-        :condition4 => shuffle(repeat(["orange", "banana"], outer=div(nrow(evts), 2))),
-        :condition5 => shuffle(repeat(["black", "white"], outer=div(nrow(evts), 2))))
-
-    return dataS, evts
-end
 
 
 function plot_data(data, value_ranges, categorical_vars, continuous_vars)
@@ -145,7 +98,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
         line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
         line_args3 = [:color => sub[!, name] for name in continuous_vars]
         push!(plots, S.Scatter(points; markersize=10, args...))
-        push!(plots, S.Lines(points;line_args..., line_args2..., line_args3...))
+        push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
         return
     end
 
@@ -157,7 +110,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
         values1 = cat_values[end]
         values2 = cat_values[end-1]
         gridmax = length(values1)
-        var_values = [categorical_vars[1:end-2] .=> Set.(cat_values[1:end-2]); map(n-> n=> 1:1, continuous_vars);]
+        var_values = [categorical_vars[1:end-2] .=> Set.(cat_values[1:end-2]); map(n -> n => 1:1, continuous_vars)]
         append!(legend_entries, var_values)
         axes = Matrix{Makie.BlockSpec}(undef, length(values1), length(values2))
         for (i, catval1) in enumerate(values1)
@@ -182,31 +135,5 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars)
     legends = map(legend_entries) do (k, v)
         return variable_legend(k, v, palettes)
     end
-    return S.GridLayout([(1, 1)=> S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
-end
-
-App() do
-    formulaS = @formula(0 ~ 1 + condition3 + condition2 + continuous + continuous3)
-    dataS, evts = gen_data()
-    times = range(0, length=size(dataS, 2), step=1 ./ 100)
-    model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
-    formular = Unfold.formula(model)
-    variables = extract_variables(model)
-    widget_signal, widget_dom, value_ranges = formular_widgets(variables, formular)
-    
-    eff_signal = effects_signal(model, widget_signal)
-    varnames = first.(variables)
-    var_types = map(x -> x[2][3], variables)
-    obs = Observable(S.GridLayout())
-    l = Base.ReentrantLock()
-    Makie.on_latest(eff_signal; update=true) do eff
-        lock(l) do
-            var_types = map(x -> x[2][3], variables)
-            obs[] = plot_data(eff, value_ranges, varnames[var_types.==:CategoricalTerm], varnames[var_types.==:ContinuousTerm])
-        end
-        return
-    end
-    css = Asset(joinpath(@__DIR__, "..", "style.css"))
-    fig = plot(obs; figure=(size=(500, 500),))
-    return DOM.div(css, JSServe.TailwindCSS, widget_dom, fig)
+    return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
 end

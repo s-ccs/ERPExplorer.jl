@@ -7,9 +7,9 @@ function SelectSet(items)
     return SelectSet(Base.convert(Observable{Vector{Any}}, items), Base.convert(Observable{Vector{Any}}, items))
 end
 
-function JSServe.jsrender(s::Session, selector::SelectSet)
+function Bonito.jsrender(s::Session, selector::SelectSet)
     rows = map(selector.items[]) do value
-        c = JSServe.Checkbox(true; class="p-1 m-1")
+        c = Bonito.Checkbox(true; class="p-1 m-1")
         on(s, c.value) do x
             values = selector.value[]
             has_item = (value in values)
@@ -22,7 +22,7 @@ function JSServe.jsrender(s::Session, selector::SelectSet)
         end
         return D.FlexRow(value, c)
     end
-    return JSServe.jsrender(s, D.Card(D.FlexCol(rows...)))
+    return Bonito.jsrender(s, D.Card(D.FlexCol(rows...)))
 end
 
 function value_range(args)
@@ -51,7 +51,7 @@ function widget(range::AbstractRange{<:Number})
         "mode" => "range",
         "density" => 10
     )
-    range_slider.orientation[] = JSServe.WidgetsBase.vertical
+    range_slider.orientation[] = Bonito.WidgetsBase.vertical
     return range_slider
 end
 
