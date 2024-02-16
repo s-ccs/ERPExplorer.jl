@@ -1,5 +1,11 @@
 using Revise
 using ERPExplorer
+using UnfoldSim
+using DataFrames
+using Random
+using Unfold
+using Bonito
+
 
 includet("gen_data.jl")
 #formulaS = @formula(0 ~ 1 +luminance + contrast + saccade_amplitude + string + animal + fruit + color)
