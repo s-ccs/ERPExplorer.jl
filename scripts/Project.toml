@@ -1,3 +1,8 @@
 [deps]
+BSplineKit = "093aae92-e908-43d7-9660-e50ee39d5a0a"
+Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 ERPExplorer = "a0936657-5da6-42c1-a2f2-44cfa89f194c"
+PlutoLinks = "0ff47ea0-7a50-410d-8455-4348d5de0420"
+Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
 UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"

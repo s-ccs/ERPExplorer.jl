@@ -1,3 +1,4 @@
+using UnfoldSim, DataFrames, Random
 function gen_data()
     d1, evts = UnfoldSim.predef_eeg(n_repeats=120, noiselevel=25; return_epoched=true)
     dataS = permutedims(repeat(d1, 1, 1, 64), (3, 1, 2))
