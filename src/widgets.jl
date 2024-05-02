@@ -56,12 +56,18 @@ function widget(range::AbstractRange{<:Number})
     return range_slider
 end
 
-function mapping_widget(varnames,var_types)
-    c_dropdown = Dropdown([v for (ix,v) in enumerate(varnames)]; index=1)
-    m_dropdown = Dropdown([v for (ix,v) in enumerate(varnames) if var_types[ix] ==:CategoricalTerm]; index=2)
-    mapping = @lift Dict($(c_dropdown.value)=>:color,$(m_dropdown.value)=>:marker)
+function mapping_widget(varnames, var_types)
+    cats = [v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]
+    push!(cats, :none)
 
-    return mapping,Col(Row(DOM.div("color:"),c_dropdown),Row(DOM.div("marker:"),m_dropdown))
+    c_dropdown = Dropdown(cats; index=1)
+    m_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
+    l_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
+    col_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
+    row_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
+    mapping = @lift Dict(:color => $(c_dropdown.value), :marker => $(m_dropdown.value), :linestyle => $(l_dropdown.value), :col => $(col_dropdown.value), :row => $(row_dropdown.value))
+
+    return mapping, Col(Row(DOM.div("color:"), c_dropdown), Row(DOM.div("marker:"), m_dropdown), Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown))
 end
 function widget(values::Set)
     return SelectSet(collect(values))
@@ -72,7 +78,7 @@ function formular_text(content; class="")
 end
 
 function dropdown(name, content)
-    
+
     return DOM.div(formular_text(name), DOM.div(content; class="dropdown-content"); class=" bg-slate-100 hover:bg-lime-100 dropdown")
 end
 
