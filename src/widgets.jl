@@ -20,9 +20,9 @@ function Bonito.jsrender(s::Session, selector::SelectSet)
             end
             notify(selector.value)
         end
-        return D.FlexRow(value, c)
+        return Row(value, c)
     end
-    return Bonito.jsrender(s, D.Card(D.FlexCol(rows...)))
+    return Bonito.jsrender(s, Card(Col(rows...)))
 end
 
 function value_range(args)
@@ -56,6 +56,13 @@ function widget(range::AbstractRange{<:Number})
     return range_slider
 end
 
+function mapping_widget(varnames,var_types)
+    c_dropdown = Dropdown([v for (ix,v) in enumerate(varnames)]; index=1)
+    m_dropdown = Dropdown([v for (ix,v) in enumerate(varnames) if var_types[ix] ==:CategoricalTerm]; index=2)
+    mapping = @lift Dict($(c_dropdown.value)=>:color,$(m_dropdown.value)=>:marker)
+
+    return mapping,Col(Row(DOM.div("color:"),c_dropdown),Row(DOM.div("marker:"),m_dropdown))
+end
 function widget(values::Set)
     return SelectSet(collect(values))
 end
@@ -65,6 +72,7 @@ function formular_text(content; class="")
 end
 
 function dropdown(name, content)
+    
     return DOM.div(formular_text(name), DOM.div(content; class="dropdown-content"); class=" bg-slate-100 hover:bg-lime-100 dropdown")
 end
 
