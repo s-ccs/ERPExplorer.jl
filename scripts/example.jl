@@ -19,17 +19,3 @@ model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 explore(model)
 
 
-
-#---
-
-a = Bonito.App() do
-    #formular = Unfold.formula(model)
-    variables = ERPExplorer.extract_variables(model)
-    widget_signal, widget_dom, value_ranges = ERPExplorer.formular_widgets(variables)
-    onany(widget_signal, value_ranges) do ws, vs
-        @show ws, vs
-    end
-    css = ERPExplorer.Asset(joinpath(@__DIR__, "..", "style.css"))
-    return ERPExplorer.DOM.div(css, ERPExplorer.Bonito.TailwindCSS, widget_dom)
-end
-

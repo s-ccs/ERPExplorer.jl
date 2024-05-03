@@ -24,7 +24,7 @@ include("widgets.jl")
 
 
 
-function explore(model::UnfoldModel; size=(500, 500))
+function explore(model::UnfoldModel; size=(700, 500))
     App() do
         #formular = Unfold.formula(model)
         variables = extract_variables(model)
@@ -48,7 +48,7 @@ function explore(model::UnfoldModel; size=(500, 500))
         end
         obs = Observable(S.GridLayout())
         l = Base.ReentrantLock()
-        Makie.on_latest(eff_signal; update=true) do eff # update = true means only, that it is run once immediately
+        Makie.onany_latest(eff_signal, mapping; update=true) do eff, mapping # update = true means only, that it is run once immediately
             lock(l) do
                 #var_types = map(x -> x[2][3], variables)
                 obs[] = plot_data(eff, value_ranges, varnames[var_types.==:CategoricalTerm], varnames[var_types.==:ContinuousTerm], mapping)
@@ -57,14 +57,14 @@ function explore(model::UnfoldModel; size=(500, 500))
         end
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
         fig = plot(obs; figure=(size=size,))
-        return DOM.div(css,
+        return DOM.div(css, Bonito.TailwindCSS,
             Grid(
                 Card(widget_dom, style=Styles("grid-area" => "header")),
                 Card(mapping_dom, style=Styles("grid-area" => "sidebar")),
-                Card(fig, style=Styles("grid-area" => "content")); columns="5fr 1fr", rows="1fr 5fr", areas="""
+                Card(fig, style=Styles("grid-area" => "content")); columns="5fr 1fr", rows="1fr 10fr", areas="""
                  'header header'
                  'content sidebar'
-                 """); style=Styles("height" => "800px", "margin" => "20px", "position" => :relative,))
+                 """); style=Styles("height" => "$(size[2])px", "width" => "$(size[1])px", "margin" => "20px", "position" => :relative,))
     end
 end
 export explore

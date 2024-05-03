@@ -1,11 +1,10 @@
-function variable_legend(name, values::AbstractRange{<:Number}, palettes)
-    range, cmap = palettes[name][:colormap]
+function variable_legend(name, values::AbstractRange{<:Number}, palette::Dict)
+    range, cmap = palette[:colormap]
     return S.Colorbar(limits=range, colormap=cmap, label=string(name))
 end
 
-function variable_legend(name, values::Set, palettes)
-    #    @debug "variable_legend" palettes name
-    palette = palettes[name]
+function variable_legend(name, values::Set, palette::Dict)
+
     marker_color_lookup = (x) -> begin
         if haskey(palette, :color)
             return get(palette[:color], x, :black)
@@ -55,14 +54,13 @@ function formular_widgets(variables)
 
     widget_values = map(nw -> nw[2].value, widgets)
     checkbox_values = map(c -> c.value, checkboxes)
-    #    @debug typeof(widget_values)
+
     widget_signal = lift(widget_values..., checkbox_values...; ignore_equal_values=true) do args...
         result = []
         for i in 1:length(args[1:end/2])
             c = args[i+length(args)/2]
             w = args[i]
-            #            @debug c w
-            # map(identity) -> make a vector with concrete element type
+
             push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
         end
         return result
@@ -72,14 +70,16 @@ end
 
 function effects_signal(model, widget_signal)
     effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
-    @debug widget_signal
+
     on(widget_signal; update=true) do widget_values
-        #        @debug widget_values
+
 
 
         effect_dict = Dict(k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1])
-        #    @debug widget_values
-        #    @debug effect_dict
+        @debug effect_dict
+        if isempty(effect_dict)
+            effect_dict = Dict(:dummy => ["dummy"])
+        end
         eff = effects(effect_dict, model)
         for (k, wv) in widget_values
             if isempty(wv[2]) || !wv[1]
@@ -95,18 +95,62 @@ end
 
 
 
+
+"""
+- plots is a spec-api list to push into
+- data is the dataframe to be subsetted
+- vars contains the levels to be plotted
+"""
+function create_plot!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
+
+    selector = [(name => x -> x .== var) for (name, var) in vars]
+
+    sub = subset(data, selector...)
+    @assert !isempty(sub) "this shouldnt be empty..."
+    points = Point2f.(sub.time, sub.yhat)
+    points[sub.time.≈maximum(sub.time)] .= Ref(Point2f(NaN)) # terrible hack, it will remove the last point from ploitting. better would be to loop the lines! with views of the dataframe...
+
+
+    #    @debug "create_plot!" scatter_styles vars
+    #args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
+    args = [scatter_styles[term][1] => scatter_styles[term][2][val] for (term, val) in vars if term ∈ keys(scatter_styles)]
+
+    if isempty(line_styles)
+        line_args = []
+        line_args2 = []
+        line_args3 = args
+
+        if !isempty(args) && !any(x -> x[1] .== :color, line_args3)
+            push!(args, :color => :black)
+        end
+
+
+    else
+        line_args = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
+        line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
+        line_args3 = [:color => sub[!, name] for name in continuous_vars]
+    end
+    push!(plots, S.Scatter(points; markersize=10, args...))
+
+    push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
+    return
+end
+
+
+
+
 """
     - data: effects(Dict(...),m) output ::DataFrames
     - value_ranges
-    - categorical_vars
+    - cat_terms
     - continuous_vars
     - mapping: Dict name=>property
 
 """
-function plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
+function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     #mapping = Dict(:color => :color, :fruit => :marker)#, :fruit => :linestyle) will work in Makie 0.21
     mapping = to_value(mapping_obs)
-    @debug "mapping" mapping
+
     mpalette = [:circle, :xcross, :star4, :diamond]
     cpalette = Makie.wong_colors()
     lpalette = [:solid, :dot, :dash]
@@ -115,15 +159,15 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
     #cat_styles = [:color => cpalette, :marker => mpalette]
 
     # is the formula term even active?
-    cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in categorical_vars)
+    cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in cat_terms)
     cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_vars)
     #    @debug "active?" cat_active cont_active
     # get the categorical values
-    cat_values = [unique(data[!, cat]) for cat in categorical_vars]
+    cat_levels = [unique(data[!, cat]) for cat in cat_terms]
 
     # define what is mapped according to what for categorical
-    scatter_styles = []
-    for (vals, cat) in zip(cat_values, categorical_vars)
+    scatter_styles = Dict()
+    for (vals, cat) in zip(cat_levels, cat_terms)
         if !cat_active[cat]
             continue
         end
@@ -135,102 +179,73 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
             end
         end
     end
-    @debug "scatter_styles" scatter_styles
 
 
 
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
     if isempty(continuous_vars)
         # if no continuous variable, use the scatter-color for plotting
-        line_styles = []
+        line_styles = Dict()
 
     else
-        line_styles = [cont => (:colormap => (val, style)) for (style, val, cont) in zip(continuous_styles, continuous_values, continuous_vars) if cont_active[cont]]
+        line_styles = Dict(cont => (:colormap => (val, style)) for (style, val, cont) in zip(continuous_styles, continuous_values, continuous_vars) if cont_active[cont])
     end
 
 
-    @debug "line_styles" line_styles
-
-    """
-    - plots is a spec-api list to push into
-    - data is the dataframe to be subsetted
-    - cat_termnames contains the term-names
-    - vars contains the values to be plotted
-    """
-    function create_plot!(plots, data, cat_termnames, vars)
-
-        selector = [(name => x -> x .== var) for (name, var) in zip(cat_termnames, vars)]
-        sub = subset(data, selector...)
-
-        points = Point2f.(sub.time, sub.yhat)
-        points[sub.time.≈maximum(sub.time)] .= Ref(Point2f(NaN))
-        #        @debug "v" vars scatter_styles
-        args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
-        if isempty(line_styles)
-            line_args = []
-            line_args2 = []
-            line_args3 = args
-            if !any(x -> x[1] .== :color, line_args3)
-                push!(args, :color => :black)
-            end
-
-        else
-            line_args = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
-            line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
-            line_args3 = [:color => sub[!, name] for name in continuous_vars]
-        end
-        push!(plots, S.Scatter(points; markersize=10, args...))
-        @debug line_args line_args2 line_args3
-        push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
-        return
-    end
-
-    legend_entries = []
-    # what has currently a legend?
-    append!(legend_entries, [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]])
-    col = mapping[:col]
-    row = mapping[:row]
 
 
-    @debug col row cat_values
-    row_values = row == :none ? [""] : [v for (v, n) in zip(cat_values, categorical_vars) if n == row][1]
-    col_values = col == :none ? [""] : [v for (v, n) in zip(cat_values, categorical_vars) if n == col][1]
+    col_term = mapping[:col]
+    row_term = mapping[:row]
 
-    axes = Matrix{Makie.BlockSpec}(undef, length(row_values), length(col_values))
 
-    @debug row_values col_values
-    for (r_ix, r) = enumerate(row_values)
-        for (c_ix, c) = enumerate(col_values)
-            # keep track of plotelements
-            @debug "multiplot" r c
+    legend_entries = [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]]
+
+
+    row_levels = row_term == :none ? [""] : [v for (v, n) in zip(cat_levels, cat_terms) if n == row_term][1]
+    col_levels = col_term == :none ? [""] : [v for (v, n) in zip(cat_levels, cat_terms) if n == col_term][1]
+
+    axes = Matrix{Makie.BlockSpec}(undef, length(row_levels), length(col_levels))
+
+
+    for (r_ix, row_level) = enumerate(row_levels)
+        for (c_ix, col_level) = enumerate(col_levels)
             plots = PlotSpec[]
-            subdata = col == :none ? data : subset(data, col => x -> x .== c)
-            subdata = row == :none ? subdata : subset(subdata, row => x -> x .== r)
+            subdata = data
+            subdata = col_term == :none ? data : subset(data, col_term => level -> level .== col_level)
+            subdata = row_term == :none ? subdata : subset(subdata, row_term => level -> level .== row_level)
 
-            active_cat_vars = [n for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]]# & (r == "" || r == v) && (c == "" || c == v)]
-            active_cat_values = [v for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]] #& (r == "" || r == v) && (c == "" || c == v)]
 
-            @debug active_cat_values
-
-            #@debug size(subdata)
-            for vars in Iterators.product(active_cat_values...)
-                @debug vars
-                if !isempty(vars) && vars[1] .== "typical_value"
+            active_cat_vars = Dict(term => level for (term, level) in zip(cat_terms, cat_levels) if cat_active[term])# & 
+            if row_term != :none
+                active_cat_vars[row_term] = [row_level]
+            end
+            if col_term != :none
+                active_cat_vars[col_term] = [col_level]
+            end
+            for level_grid in Iterators.product(collect(values(active_cat_vars))...)
+                if !isempty(level_grid) && level_grid[1] .== "typical_value"
                     continue
                 end
-
-                create_plot!(plots, subdata, active_cat_vars, vars)
+                # create a new term => values (e.g. animal => [fish,cow] ) Dict
+                create_plot!(plots, subdata, Dict(collect(keys(active_cat_vars)) .=> level_grid), scatter_styles, line_styles, continuous_vars)
             end
             axes[r_ix, c_ix] = S.Axis(; plots=plots)
         end
     end
-    palettes = Dict(map(((k, v),) -> k => Dict(v), vcat(line_styles, scatter_styles)))
-    #@debug palettes
-    legends = map(legend_entries) do (k, v)
-        #@debug k v
-        return variable_legend(k, v, palettes)
+
+    palettes = merge(line_styles, scatter_styles)
+
+    legends = Union{Nothing,Makie.BlockSpec}[]
+    for (term, levels) in legend_entries
+        if haskey(palettes, term)
+            push!(legends, variable_legend(term, levels, Dict(palettes[term])))
+        end
     end
-    #@debug axes
-    return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
+
+    if isempty(legends)
+        return S.GridLayout(axes)
+    else
+        return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
+    end
 
 end
