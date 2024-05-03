@@ -4,12 +4,15 @@ struct SelectSet
 end
 
 function SelectSet(items)
-    return SelectSet(Base.convert(Observable{Vector{Any}}, items), Base.convert(Observable{Vector{Any}}, items))
+    return SelectSet(
+        Base.convert(Observable{Vector{Any}}, items),
+        Base.convert(Observable{Vector{Any}}, items),
+    )
 end
 
 function Bonito.jsrender(s::Session, selector::SelectSet)
     rows = map(selector.items[]) do value
-        c = Bonito.Checkbox(true; class="p-1 m-1")
+        c = Bonito.Checkbox(true; class = "p-1 m-1")
         on(s, c.value) do x
             values = selector.value[]
             has_item = (value in values)
@@ -35,7 +38,7 @@ function value_range(args)
         #return mini:0.1:maxi
         #else
         #return mini:maxi
-        return range(mini, maxi, length=5)
+        return range(mini, maxi, length = 5)
         #end
     elseif type == :CategoricalTerm
         return Set(default_values)
@@ -46,12 +49,9 @@ end
 
 function widget(range::AbstractRange{<:Number})
 
-    range_slider = RangeSlider(range; value=Any[minimum(range), maximum(range)])
+    range_slider = RangeSlider(range; value = Any[minimum(range), maximum(range)])
 
-    range_slider.ticks[] = Dict(
-        "mode" => "range",
-        "density" => 10
-    )
+    range_slider.ticks[] = Dict("mode" => "range", "density" => 10)
     range_slider.orientation[] = Bonito.WidgetsBase.vertical
     return range_slider
 end
@@ -60,21 +60,22 @@ function mapping_widget(varnames, var_types)
     cats = [v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]
     push!(cats, :none)
 
-    c_dropdown = Dropdown(cats; index=1)
-    m_dropdown = Dropdown(cats; index=length(cats) - 1)
-    l_dropdown = Dropdown(cats; index=length(cats))
-    col_dropdown = Dropdown(cats; index=length(cats))
-    row_dropdown = Dropdown(cats; index=length(cats))
+    c_dropdown = Dropdown(cats; index = 1)
+    m_dropdown = Dropdown(cats; index = length(cats) - 1)
+    l_dropdown = Dropdown(cats; index = length(cats))
+    col_dropdown = Dropdown(cats; index = length(cats))
+    row_dropdown = Dropdown(cats; index = length(cats))
 
     mapping = @lift Dict(
         :color => $(c_dropdown.value),
         :marker => $(m_dropdown.value),
         :linestyle => $(l_dropdown.value),
         :col => $(col_dropdown.value),
-        :row => $(row_dropdown.value)
+        :row => $(row_dropdown.value),
     )
 
-    return mapping, Col(
+    return mapping,
+    Col(
         Row(DOM.div("color:"), c_dropdown),
         Row(DOM.div("marker:"), m_dropdown),
         Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown),
@@ -86,19 +87,23 @@ function widget(values::Set)
     return SelectSet(collect(values))
 end
 
-function formular_text(content; class="")
-    return DOM.div(content; class="px-1 text-lg m-1 font-semibold $(class)")
+function formular_text(content; class = "")
+    return DOM.div(content; class = "px-1 text-lg m-1 font-semibold $(class)")
 end
 
 function dropdown(name, content)
 
-    return DOM.div(formular_text(name), DOM.div(content; class="dropdown-content"); class=" bg-slate-100 hover:bg-lime-100 dropdown")
+    return DOM.div(
+        formular_text(name),
+        DOM.div(content; class = "dropdown-content");
+        class = " bg-slate-100 hover:bg-lime-100 dropdown",
+    )
 end
 
 function style_map(::AbstractRange{<:Number})
     return Dict(
         :color => identity,
-        :colormap => RGBAf.(Colors.color.(to_colormap(:lighttest)), 0.5)
+        :colormap => RGBAf.(Colors.color.(to_colormap(:lighttest)), 0.5),
     )
 end
 
@@ -107,13 +112,10 @@ function style_map(values::Set)
     dict = Dict(v => mpalette[i] for (i, v) in enumerate(values))
     mcmap = Makie.wong_colors(0.5)
     mcolor_lookup = Dict(v => mcmap[i] for (i, v) in enumerate(values))
-    return Dict(
-        :marker => v -> dict[v],
-        :marker_color => mcolor_lookup
-    )
+    return Dict(:marker => v -> dict[v], :marker_color => mcolor_lookup)
 end
 
-function select_vspan(scene; blocking=false, priority=2, kwargs...)
+function select_vspan(scene; blocking = false, priority = 2, kwargs...)
     key = Mouse.left
     waspressed = Observable(false)
     rect = Observable(Rectf(0, 0, 1, 1)) # plotted rectangle
@@ -128,10 +130,16 @@ function select_vspan(scene; blocking=false, priority=2, kwargs...)
         high[] = r.origin[1] + r.widths[1]
     end
     plotted_span = vspan!(
-        scene, low, high, visible=false, kwargs..., transparency=true, color=(:black, 0.1)
+        scene,
+        low,
+        high,
+        visible = false,
+        kwargs...,
+        transparency = true,
+        color = (:black, 0.1),
     )
 
-    on(events(scene).mousebutton, priority=priority) do event
+    on(events(scene).mousebutton, priority = priority) do event
         if event.button == key
             if event.action == Mouse.press && is_mouseinside(scene)
                 mp = mouseposition(scene)
@@ -157,7 +165,7 @@ function select_vspan(scene; blocking=false, priority=2, kwargs...)
 
         return Consume(false)
     end
-    on(events(scene).mouseposition, priority=priority) do event
+    on(events(scene).mouseposition, priority = priority) do event
         if waspressed[]
             mp = mouseposition(scene)
             mini = minimum(rect[])
@@ -171,7 +179,7 @@ function select_vspan(scene; blocking=false, priority=2, kwargs...)
 end
 
 function rectselect(ax)
-    selrect, h = select_vspan(ax.scene; color=(0.9))
+    selrect, h = select_vspan(ax.scene; color = (0.9))
     translate!(h, 0, 0, -1) # move to background
     return selrect
 end

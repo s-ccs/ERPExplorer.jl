@@ -24,11 +24,12 @@ include("widgets.jl")
 
 
 
-function explore(model::UnfoldModel; size=(500, 500))
+function explore(model::UnfoldModel; size = (500, 500))
     App() do
         #formular = Unfold.formula(model)
         variables = extract_variables(model)
-        widget_checkbox, widget_signal, widget_dom, value_ranges = formular_widgets(variables)
+        widget_checkbox, widget_signal, widget_dom, value_ranges =
+            formular_widgets(variables)
 
         var_types = map(x -> x[2][3], variables)
         varnames = first.(variables)
@@ -42,32 +43,48 @@ function explore(model::UnfoldModel; size=(500, 500))
             ws = widget_signal.val
             ks_m = values(m)
             ks_ws = [w.first for w in ws]
-            for k = ks_ws
+            for k in ks_ws
                 widget_checkbox[k][] = k ∈ ks_m
             end
         end
         obs = Observable(S.GridLayout())
         l = Base.ReentrantLock()
-        Makie.on_latest(eff_signal; update=true) do eff # update = true means only, that it is run once immediately
+        Makie.on_latest(eff_signal; update = true) do eff # update = true means only, that it is run once immediately
             lock(l) do
                 #var_types = map(x -> x[2][3], variables)
-                obs[] = plot_data(eff, value_ranges, varnames[var_types.==:CategoricalTerm], varnames[var_types.==:ContinuousTerm], mapping)
+                obs[] = plot_data(
+                    eff,
+                    value_ranges,
+                    varnames[var_types.==:CategoricalTerm],
+                    varnames[var_types.==:ContinuousTerm],
+                    mapping,
+                )
             end
             return
         end
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
-        fig = plot(obs; figure=(size=size,))
-        return DOM.div(css,
+        fig = plot(obs; figure = (size = size,))
+        return DOM.div(
+            css,
             Grid(
-                Card(widget_dom, style=Styles("grid-area" => "header")),
-                Card(mapping_dom, style=Styles("grid-area" => "sidebar")),
-                Card(fig, style=Styles("grid-area" => "content")); columns="5fr 1fr", rows="1fr 5fr", areas="""
-                 'header header'
-                 'content sidebar'
-                 """); style=Styles("height" => "800px", "margin" => "20px", "position" => :relative,))
+                Card(widget_dom, style = Styles("grid-area" => "header")),
+                Card(mapping_dom, style = Styles("grid-area" => "sidebar")),
+                Card(fig, style = Styles("grid-area" => "content"));
+                columns = "5fr 1fr",
+                rows = "1fr 5fr",
+                areas = """
+'header header'
+'content sidebar'
+""",
+            );
+            style = Styles(
+                "height" => "800px",
+                "margin" => "20px",
+                "position" => :relative,
+            ),
+        )
     end
 end
 export explore
 
 end
-

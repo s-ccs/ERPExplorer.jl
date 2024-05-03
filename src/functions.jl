@@ -1,6 +1,6 @@
 function variable_legend(name, values::AbstractRange{<:Number}, palettes)
     range, cmap = palettes[name][:colormap]
-    return S.Colorbar(limits=range, colormap=cmap, label=string(name))
+    return S.Colorbar(limits = range, colormap = cmap, label = string(name))
 end
 
 function variable_legend(name, values::Set, palettes)
@@ -22,13 +22,14 @@ function variable_legend(name, values::Set, palettes)
     end
     conditions = collect(values)
     elements = map(conditions) do c
-        return MarkerElement(marker=marker_lookup(c), color=marker_color_lookup(c))
+        return MarkerElement(marker = marker_lookup(c), color = marker_color_lookup(c))
     end
     return S.Legend(elements, conditions)
 end
 
-widget_value(w::Vector{<:String}; resolution=1) = w
-widget_value(x::Vector; resolution=1) = x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length=5)
+widget_value(w::Vector{<:String}; resolution = 1) = w
+widget_value(x::Vector; resolution = 1) =
+    x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length = 5)
 
 """
     formular_widgets(model_variables)
@@ -44,7 +45,7 @@ function formular_widgets(variables)
     widgets = [k => widget(v) for (k, v) in value_ranges]
     checkboxes = [Checkbox(true) for k in value_ranges]
     widget_names = [formular_text("0 ~ 1")]
-    for k in 1:length(widgets)
+    for k = 1:length(widgets)
         c = checkboxes[k]
         name = widgets[k].first
         w = widgets[k].second
@@ -56,28 +57,34 @@ function formular_widgets(variables)
     widget_values = map(nw -> nw[2].value, widgets)
     checkbox_values = map(c -> c.value, checkboxes)
     #    @debug typeof(widget_values)
-    widget_signal = lift(widget_values..., checkbox_values...; ignore_equal_values=true) do args...
-        result = []
-        for i in 1:length(args[1:end/2])
-            c = args[i+length(args)/2]
-            w = args[i]
-            #            @debug c w
-            # map(identity) -> make a vector with concrete element type
-            push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
+    widget_signal =
+        lift(widget_values..., checkbox_values...; ignore_equal_values = true) do args...
+            result = []
+            for i = 1:length(args[1:end/2])
+                c = args[i+length(args)/2]
+                w = args[i]
+                #            @debug c w
+                # map(identity) -> make a vector with concrete element type
+                push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
+            end
+            return result
         end
-        return result
-    end
-    return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)), widget_signal, formular_widget, value_ranges
+    return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)),
+    widget_signal,
+    formular_widget,
+    value_ranges
 end
 
 function effects_signal(model, widget_signal)
-    effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
+    effects_signal = Observable{Any}(nothing; ignore_equal_values = true)
     @debug widget_signal
-    on(widget_signal; update=true) do widget_values
+    on(widget_signal; update = true) do widget_values
         #        @debug widget_values
 
 
-        effect_dict = Dict(k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1])
+        effect_dict = Dict(
+            k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1]
+        )
         #    @debug widget_values
         #    @debug effect_dict
         eff = effects(effect_dict, model)
@@ -96,11 +103,12 @@ end
 
 
 """
-    - data: effects(Dict(...),m) output ::DataFrames
-    - value_ranges
-    - categorical_vars
-    - continuous_vars
-    - mapping: Dict name=>property
+    plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
+    - `data`: effects(Dict(...), m) 
+    - `value_ranges`:
+    - `categorical_vars`:
+    - `continuous_vars`:
+    - `mapping`: Dict name=>property
 
 """
 function plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
@@ -128,7 +136,8 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
             continue
         end
 
-        for (target, pal) = zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
+        for (target, pal) in
+            zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
             if mapping[target] == cat
                 p = cat => (target => Dict(zip(vals, pal)))
                 push!(scatter_styles, p)
@@ -137,25 +146,28 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
     end
     @debug "scatter_styles" scatter_styles
 
-
-
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
     if isempty(continuous_vars)
         # if no continuous variable, use the scatter-color for plotting
         line_styles = []
 
     else
-        line_styles = [cont => (:colormap => (val, style)) for (style, val, cont) in zip(continuous_styles, continuous_values, continuous_vars) if cont_active[cont]]
+        line_styles = [
+            cont => (:colormap => (val, style)) for (style, val, cont) in
+            zip(continuous_styles, continuous_values, continuous_vars) if
+            cont_active[cont]
+        ]
     end
 
 
     @debug "line_styles" line_styles
 
     """
-    - plots is a spec-api list to push into
-    - data is the dataframe to be subsetted
-    - cat_termnames contains the term-names
-    - vars contains the values to be plotted
+    create_plot!(plots, data, cat_termnames, vars)
+    - `plots`: a spec-api list to push into
+    - `data`: the dataframe to be subsetted
+    - `cat_termnames`: contains the term names
+    - `vars`: contains the values to be plotted
     """
     function create_plot!(plots, data, cat_termnames, vars)
 
@@ -179,7 +191,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
             line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
             line_args3 = [:color => sub[!, name] for name in continuous_vars]
         end
-        push!(plots, S.Scatter(points; markersize=10, args...))
+        push!(plots, S.Scatter(points; markersize = 10, args...))
         @debug line_args line_args2 line_args3
         push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
         return
@@ -187,28 +199,37 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
 
     legend_entries = []
     # what has currently a legend?
-    append!(legend_entries, [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]])
+    append!(
+        legend_entries,
+        [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]],
+    )
     col = mapping[:col]
     row = mapping[:row]
 
 
     @debug col row cat_values
-    row_values = row == :none ? [""] : [v for (v, n) in zip(cat_values, categorical_vars) if n == row][1]
-    col_values = col == :none ? [""] : [v for (v, n) in zip(cat_values, categorical_vars) if n == col][1]
+    row_values =
+        row == :none ? [""] :
+        [v for (v, n) in zip(cat_values, categorical_vars) if n == row][1]
+    col_values =
+        col == :none ? [""] :
+        [v for (v, n) in zip(cat_values, categorical_vars) if n == col][1]
 
     axes = Matrix{Makie.BlockSpec}(undef, length(row_values), length(col_values))
 
     @debug row_values col_values
-    for (r_ix, r) = enumerate(row_values)
-        for (c_ix, c) = enumerate(col_values)
+    for (r_ix, r) in enumerate(row_values)
+        for (c_ix, c) in enumerate(col_values)
             # keep track of plotelements
             @debug "multiplot" r c
             plots = PlotSpec[]
             subdata = col == :none ? data : subset(data, col => x -> x .== c)
             subdata = row == :none ? subdata : subset(subdata, row => x -> x .== r)
 
-            active_cat_vars = [n for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]]# & (r == "" || r == v) && (c == "" || c == v)]
-            active_cat_values = [v for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]] #& (r == "" || r == v) && (c == "" || c == v)]
+            active_cat_vars =
+                [n for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]]# & (r == "" || r == v) && (c == "" || c == v)]
+            active_cat_values =
+                [v for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]] #& (r == "" || r == v) && (c == "" || c == v)]
 
             @debug active_cat_values
 
@@ -221,7 +242,7 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
 
                 create_plot!(plots, subdata, active_cat_vars, vars)
             end
-            axes[r_ix, c_ix] = S.Axis(; plots=plots)
+            axes[r_ix, c_ix] = S.Axis(; plots = plots)
         end
     end
     palettes = Dict(map(((k, v),) -> k => Dict(v), vcat(line_styles, scatter_styles)))

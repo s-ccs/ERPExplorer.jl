@@ -1,7 +1,7 @@
 begin
     using Pkg
     Pkg.activate(".")
-	Pkg.status()
+    Pkg.status()
     using Revise
     using ERPExplorer
     using UnfoldSim
@@ -16,13 +16,10 @@ include("gen_data.jl")
 formulaS = @formula(0 ~ 1 + animal + fruit)
 formulaS = @formula(0 ~ 1 + luminance + fruit + animal)
 dataS, evts = gen_data()
-times = range(0, length=size(dataS, 2), step=1 ./ 100)
+times = range(0, length = size(dataS, 2), step = 1 ./ 100)
 model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
-
 explore(model)
-
-
 
 #---
 
@@ -36,4 +33,3 @@ a = Bonito.App() do
     css = ERPExplorer.Asset(joinpath(@__DIR__, "..", "style.css"))
     return ERPExplorer.DOM.div(css, ERPExplorer.Bonito.TailwindCSS, widget_dom)
 end
-
