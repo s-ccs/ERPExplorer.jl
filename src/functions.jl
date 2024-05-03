@@ -151,12 +151,19 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
 
     @debug "line_styles" line_styles
 
-    function create_plot!(plots, data, catvars, vars)
+    """
+    - plots is a spec-api list to push into
+    - data is the dataframe to be subsetted
+    - cat_termnames contains the term-names
+    - vars contains the values to be plotted
+    """
+    function create_plot!(plots, data, cat_termnames, vars)
 
-        selector = [(name => x -> x .== var) for (name, var) in zip(catvars, vars)]
+        selector = [(name => x -> x .== var) for (name, var) in zip(cat_termnames, vars)]
         sub = subset(data, selector...)
 
         points = Point2f.(sub.time, sub.yhat)
+        points[sub.time.≈maximum(sub.time)] .= Ref(Point2f(NaN))
         #        @debug "v" vars scatter_styles
         args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
         if isempty(line_styles)
@@ -173,49 +180,57 @@ function plot_data(data, value_ranges, categorical_vars, continuous_vars, mappin
             line_args3 = [:color => sub[!, name] for name in continuous_vars]
         end
         push!(plots, S.Scatter(points; markersize=10, args...))
+        @debug line_args line_args2 line_args3
         push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
         return
     end
 
-    gridmax = 1
     legend_entries = []
-    if length(categorical_vars) > 2
-        @debug "more than 2 cats"
-        append!(legend_entries, var_values)
-        axes = Matrix{Makie.BlockSpec}(undef, length(values1), length(values2))
-        for (i, catval1) in enumerate(values1)
-            for (k, catval2) in enumerate(values2)
-                plots = PlotSpec[]
-                subdata = subset(data, cat1 => x -> x .== catval1, cat2 => x -> x .== catval2)
-                for vars in Iterators.product(cat_values[1:end-2]...)
-                    create_plot!(plots, subdata, categorical_vars[1:end-2], vars)
+    # what has currently a legend?
+    append!(legend_entries, [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]])
+    col = mapping[:col]
+    row = mapping[:row]
+
+
+    @debug col row cat_values
+    row_values = row == :none ? [""] : [v for (v, n) in zip(cat_values, categorical_vars) if n == row][1]
+    col_values = col == :none ? [""] : [v for (v, n) in zip(cat_values, categorical_vars) if n == col][1]
+
+    axes = Matrix{Makie.BlockSpec}(undef, length(row_values), length(col_values))
+
+    @debug row_values col_values
+    for (r_ix, r) = enumerate(row_values)
+        for (c_ix, c) = enumerate(col_values)
+            # keep track of plotelements
+            @debug "multiplot" r c
+            plots = PlotSpec[]
+            subdata = col == :none ? data : subset(data, col => x -> x .== c)
+            subdata = row == :none ? subdata : subset(subdata, row => x -> x .== r)
+
+            active_cat_vars = [n for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]]# & (r == "" || r == v) && (c == "" || c == v)]
+            active_cat_values = [v for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]] #& (r == "" || r == v) && (c == "" || c == v)]
+
+            @debug active_cat_values
+
+            #@debug size(subdata)
+            for vars in Iterators.product(active_cat_values...)
+                @debug vars
+                if !isempty(vars) && vars[1] .== "typical_value"
+                    continue
                 end
-                axes[i, k] = S.Axis(; title="$cat1: $catval1, $cat2: $catval2", plots=plots)
+
+                create_plot!(plots, subdata, active_cat_vars, vars)
             end
+            axes[r_ix, c_ix] = S.Axis(; plots=plots)
         end
-    else
-        # what has currently a legend?
-        append!(legend_entries, [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]])
-
-        # keep track of plotelements
-        plots = PlotSpec[]
-
-        active_cat_vars = [n for n in categorical_vars if cat_active[n]]
-        active_cat_values = [v for (n, v) in zip(categorical_vars, cat_values) if cat_active[n]]
-
-        for vars in Iterators.product(active_cat_values...)
-            @debug vars
-            if !isempty(vars) && vars[1] .== "typical_value"
-                continue
-            end
-
-            create_plot!(plots, data, active_cat_vars, vars)
-        end
-        axes = [S.Axis(; plots=plots)]
     end
     palettes = Dict(map(((k, v),) -> k => Dict(v), vcat(line_styles, scatter_styles)))
+    #@debug palettes
     legends = map(legend_entries) do (k, v)
+        #@debug k v
         return variable_legend(k, v, palettes)
     end
+    #@debug axes
     return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
+
 end

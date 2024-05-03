@@ -9,7 +9,7 @@ function gen_data()
         :luminance => rand(nrow(evts)) .* 100,
         :contrast => rand(nrow(evts)),
         :string => shuffle(repeat(["stringsuperlong", "stringshort", "stringUPPERCASE", "stringEXCITED!!!!"], outer=div(nrow(evts), 4))),
-        :animal => shuffle(repeat(["cat", "dog", "monkey"], outer=div(nrow(evts), 3))),
+        :animal => shuffle(repeat(["cat", "dog"], outer=div(nrow(evts), 2))),
         :fruit => shuffle(repeat(["orange", "banana"], outer=div(nrow(evts), 2))),
         :color => shuffle(repeat(["black", "white"], outer=div(nrow(evts), 2))))
 

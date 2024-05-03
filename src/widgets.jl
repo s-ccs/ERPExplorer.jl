@@ -61,13 +61,26 @@ function mapping_widget(varnames, var_types)
     push!(cats, :none)
 
     c_dropdown = Dropdown(cats; index=1)
-    m_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
-    l_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
-    col_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
-    row_dropdown = Dropdown([v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]; index=length(cats))
-    mapping = @lift Dict(:color => $(c_dropdown.value), :marker => $(m_dropdown.value), :linestyle => $(l_dropdown.value), :col => $(col_dropdown.value), :row => $(row_dropdown.value))
+    m_dropdown = Dropdown(cats; index=length(cats) - 1)
+    l_dropdown = Dropdown(cats; index=length(cats))
+    col_dropdown = Dropdown(cats; index=length(cats))
+    row_dropdown = Dropdown(cats; index=length(cats))
 
-    return mapping, Col(Row(DOM.div("color:"), c_dropdown), Row(DOM.div("marker:"), m_dropdown), Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown))
+    mapping = @lift Dict(
+        :color => $(c_dropdown.value),
+        :marker => $(m_dropdown.value),
+        :linestyle => $(l_dropdown.value),
+        :col => $(col_dropdown.value),
+        :row => $(row_dropdown.value)
+    )
+
+    return mapping, Col(
+        Row(DOM.div("color:"), c_dropdown),
+        Row(DOM.div("marker:"), m_dropdown),
+        Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown),
+        Row(DOM.div("col-facet"), col_dropdown),
+        Row(DOM.div("row-facet"), row_dropdown),
+    )
 end
 function widget(values::Set)
     return SelectSet(collect(values))
