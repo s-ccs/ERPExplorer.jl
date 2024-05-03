@@ -60,11 +60,36 @@ function mapping_widget(varnames, var_types)
     cats = [v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]
     push!(cats, :none)
 
-    c_dropdown = Dropdown(cats; index = 1)
-    m_dropdown = Dropdown(cats; index = length(cats) - 1)
-    l_dropdown = Dropdown(cats; index = length(cats))
-    col_dropdown = Dropdown(cats; index = length(cats))
-    row_dropdown = Dropdown(cats; index = length(cats))
+    css = CSS(
+        "font-weight" => 600,
+        "display" => "block",
+        "position" => "absolute",
+        "background-color" => "#f9f9f9",
+        "min-width" => "40px",
+        "right" => "10px",
+        #"box-shadow" => "0px 8px 16px 0px rgba(0,0,0,0.2)",
+        "padding"=> "1px 1px", #size of boxes
+        #"z-index"=> "1",  
+    )
+
+    css1 = CSS(
+        "display" => "table-row-group",
+        "position" => "relative",
+        "right" => "35px",
+        "bottom" => "0px",
+        "padding"=> "1px 40px",
+    )
+    css2 = CSS(
+        #"display" => "table-row-group",
+        "position" => "relative",
+       # "background-color" => "#f9f9f9",
+        "padding"=> "1px 30px 80px",
+    )
+    c_dropdown = Dropdown(cats; index = 1, style = Styles(css))
+    m_dropdown = Dropdown(cats; index = length(cats) - 1, style = Styles(css))
+    l_dropdown = Dropdown(cats; index = length(cats), style = Styles(css))
+    col_dropdown = Dropdown(cats; index = length(cats), style = Styles(css))
+    row_dropdown = Dropdown(cats; index = length(cats), style = Styles(css))
 
     mapping = @lift Dict(
         :color => $(c_dropdown.value),
@@ -76,11 +101,12 @@ function mapping_widget(varnames, var_types)
 
     return mapping,
     Col(
-        Row(DOM.div("color:"), c_dropdown),
-        Row(DOM.div("marker:"), m_dropdown),
-        Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown),
-        Row(DOM.div("col-facet"), col_dropdown),
-        Row(DOM.div("row-facet"), row_dropdown),
+        Row(DOM.div("color:"), c_dropdown, style = Styles(css2)),
+        Row(DOM.div("marker:"), m_dropdown, style = Styles(css2)),
+        Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown, style = Styles(css2)),
+        Row(DOM.div("column facet"), col_dropdown, style = Styles(css2)),
+        Row(DOM.div("row facet"), row_dropdown, style = Styles(css2)), 
+        style = Styles(css1)
     )
 end
 function widget(values::Set)

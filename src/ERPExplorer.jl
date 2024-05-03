@@ -16,15 +16,11 @@ using DataFramesMeta
 using StatsModels
 using StatsBase
 
-
-
 include("formula_extractor.jl")
 include("functions.jl")
 include("widgets.jl")
 
-
-
-function explore(model::UnfoldModel; size = (500, 500))
+function explore(model::UnfoldModel; size = (600, 600))
     App() do
         #formular = Unfold.formula(model)
         variables = extract_variables(model)
@@ -72,13 +68,14 @@ function explore(model::UnfoldModel; size = (500, 500))
                 Card(fig, style = Styles("grid-area" => "content"));
                 columns = "5fr 1fr",
                 rows = "1fr 5fr",
-                areas = """
-'header header'
-'content sidebar'
-""",
+                areas = 
+                """
+                'header header'
+                'content sidebar'
+                """,
             );
             style = Styles(
-                "height" => "800px",
+                "height" => "600px",
                 "margin" => "20px",
                 "position" => :relative,
             ),
