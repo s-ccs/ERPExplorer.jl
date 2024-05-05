@@ -13,6 +13,7 @@ function gen_data()
         :fruit => shuffle(repeat(["orange", "banana"], outer=div(nrow(evts), 2))),
         :color => shuffle(repeat(["black", "white"], outer=div(nrow(evts), 2))))
 
-    return dataS, evts
+    positions = rand(Point2f, size(dataS, 1))
+    return dataS, evts, positions
 end
 

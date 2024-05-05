@@ -68,10 +68,10 @@ function formular_widgets(variables)
     return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)), widget_signal, formular_widget, value_ranges
 end
 
-function effects_signal(model, widget_signal)
+function effects_signal(model, widget_signal, channel)
     effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
 
-    on(widget_signal; update=true) do widget_values
+    onany(widget_signal, channel; update=true) do widget_values, chan
 
 
 
@@ -87,7 +87,7 @@ function effects_signal(model, widget_signal)
             end
         end
 
-        filter!(x -> x.channel == 1, eff)
+        filter!(x -> x.channel == chan, eff)
         effects_signal[] = eff
     end
     return effects_signal
