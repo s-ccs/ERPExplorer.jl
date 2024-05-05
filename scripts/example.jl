@@ -1,13 +1,17 @@
-using Revise
-using ERPExplorer
-using UnfoldSim
-using DataFrames
-using Random
-using Unfold
-using Bonito
+begin
+    using Pkg
+    Pkg.activate(".")
+	Pkg.status()
+    using Revise
+    using ERPExplorer
+    using UnfoldSim
+    using DataFrames
+    using Random
+    using Unfold
+    using Bonito
+end
 
-
-includet("gen_data.jl")
+include("gen_data.jl")
 #formulaS = @formula(0 ~ 1 +luminance + contrast + saccade_amplitude + string + animal + fruit + color)
 formulaS = @formula(0 ~ 1 + animal + fruit)
 formulaS = @formula(0 ~ 1 + luminance + fruit + animal)
