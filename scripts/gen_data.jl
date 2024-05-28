@@ -20,5 +20,6 @@ function gen_data()
         :color => shuffle(repeat(["black", "white"], outer = div(nrow(evts), 2))),
     )
 
-    return dataS, evts
+    positions = rand(Point2f, size(dataS, 1))
+    return dataS, evts, positions
 end

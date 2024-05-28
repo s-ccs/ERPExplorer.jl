@@ -15,12 +15,13 @@ using DataFrames
 using DataFramesMeta
 using StatsModels
 using StatsBase
+using TopoPlots
 
 include("formula_extractor.jl")
 include("functions.jl")
 include("widgets.jl")
 
-function explore(model::UnfoldModel; size = (600, 600))
+function explore(model::UnfoldModel; positions=nothing, size=(700, 600))
     App() do
         #formular = Unfold.formula(model)
         variables = extract_variables(model)
@@ -32,9 +33,15 @@ function explore(model::UnfoldModel; size = (600, 600))
 
         mapping, mapping_dom = mapping_widget(varnames, var_types)
 
+        if isnothing(positions)
+            channel = Observable(1)
+            topo_widget = nothing
+        else
+            topo_widget, channel = topoplot_widget(positions; size=size .* 0.3)
+        end
         #@debug "mapping" mapping
         #mapping = Observable(Dict(:color => :color, :fruit => :marker))
-        eff_signal = effects_signal(model, widget_signal)
+        eff_signal = effects_signal(model, widget_signal, channel)
         on(mapping) do m
             ws = widget_signal.val
             ks_m = values(m)
@@ -45,7 +52,7 @@ function explore(model::UnfoldModel; size = (600, 600))
         end
         obs = Observable(S.GridLayout())
         l = Base.ReentrantLock()
-        Makie.on_latest(eff_signal; update = true) do eff # update = true means only, that it is run once immediately
+        Makie.onany_latest(eff_signal, mapping; update=true) do eff, mapping # update = true means only, that it is run once immediately
             lock(l) do
                 #var_types = map(x -> x[2][3], variables)
                 obs[] = plot_data(
@@ -59,27 +66,17 @@ function explore(model::UnfoldModel; size = (600, 600))
             return
         end
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
-        fig = plot(obs; figure = (size = size,))
-        return DOM.div(
-            css,
+        fig = plot(obs; figure=(size=size,))
+        return DOM.div(css, Bonito.TailwindCSS,
             Grid(
-                Card(widget_dom, style = Styles("grid-area" => "header")),
-                Card(mapping_dom, style = Styles("grid-area" => "sidebar")),
-                Card(fig, style = Styles("grid-area" => "content"));
-                columns = "5fr 1fr",
-                rows = "1fr 5fr",
-                areas = 
-                """
-                'header header'
-                'content sidebar'
-                """,
-            );
-            style = Styles(
-                "height" => "600px",
-                "margin" => "20px",
-                "position" => :relative,
-            ),
-        )
+                Card(widget_dom, style=Styles("grid-area" => "header")),
+                Card(mapping_dom, style=Styles("grid-area" => "sidebar")),
+                Card(topo_widget, style=Styles("grid-area" => "topo")),
+                Card(fig, style=Styles("grid-area" => "content")); columns="5fr 1fr", rows="1fr 6fr 4fr", areas="""
+                 'header header'
+                 'content sidebar'
+                 'content topo'
+                 """); style=Styles("height" => "$(1.2*size[2])px", "width" => "$(size[1])px", "margin" => "20px", "position" => :relative,))
     end
 end
 export explore

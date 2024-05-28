@@ -99,14 +99,12 @@ function mapping_widget(varnames, var_types)
         :row => $(row_dropdown.value),
     )
 
-    return mapping,
-    Col(
-        Row(DOM.div("color:"), c_dropdown, style = Styles(css2)),
-        Row(DOM.div("marker:"), m_dropdown, style = Styles(css2)),
-        Row(DOM.div("linestyle (wait for new WGLMakie):"), l_dropdown, style = Styles(css2)),
-        Row(DOM.div("column facet"), col_dropdown, style = Styles(css2)),
-        Row(DOM.div("row facet"), row_dropdown, style = Styles(css2)), 
-        style = Styles(css1)
+    return mapping, Col(
+        Row(DOM.div("color:"), c_dropdown, align_items="center", justify_items="end"),
+        Row(DOM.div("marker:"), m_dropdown, align_items="center", justify_items="end"),
+        Row(DOM.div("linestyle (bug):"), l_dropdown, align_items="center", justify_items="end"),
+        Row(DOM.div("column facet"), col_dropdown, align_items="center", justify_items="end"),
+        Row(DOM.div("row facet"), row_dropdown, align_items="center", justify_items="end"),
     )
 end
 function widget(values::Set)
@@ -208,4 +206,45 @@ function rectselect(ax)
     selrect, h = select_vspan(ax.scene; color = (0.9))
     translate!(h, 0, 0, -1) # move to background
     return selrect
+end
+
+
+
+function topoplot_widget(positions; size=())
+
+    strokecolor = Observable(repeat([:red], length(to_value(positions))))
+    interactive_scatter = Observable(1)
+
+    colorrange = vcat(0, 1)
+    colormap = vcat(Gray(0.5), Gray(1))
+
+    data_obs = Observable(zeros(length(to_value(positions))))
+    data_obs.val[1] = 1
+
+    h_topo = eeg_topoplot(data_obs, nothing; positions=positions, colorrange=colorrange, colormap=colormap, interpolation=UnfoldMakie.NullInterpolator(), figure=(; size=size), axis=(; xzoomlock=true, yzoomlock=true, xrectzoom=false, yrectzoom=false), label_scatter=(; strokecolor=:black, strokewidth=1.0, markersize=20.0))
+
+
+    on(events(h_topo).mousebutton) do event
+        if event.button == Mouse.left && event.action == Mouse.press
+            plt, p = pick(h_topo)
+            if isa(plt, Makie.Scatter)
+                #@debug plt.parent
+                #h_topo.plot.strokecolor[] .= :black
+                #h_topo.plot.strokecolor[][p] = :green
+                #@debug plt.strokecolor
+                #notify(h_topo.plot.strokecolor) # not sure why this is necessary, but oh well..
+                data_obs[] .= 0
+                data_obs[][p] = 1
+                @debug data_obs
+                notify(data_obs)
+                interactive_scatter[] = p
+            end
+
+        end
+    end
+    hidedecorations!(h_topo.axis)
+    hidespines!(h_topo.axis)
+    #xlims!(h_topo.axis, [-0.25 1.25])
+    return h_topo, interactive_scatter
+
 end
