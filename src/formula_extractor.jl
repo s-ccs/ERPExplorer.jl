@@ -7,7 +7,7 @@ get_sym(t::FunctionTerm) = ""
 get_values(t::InterceptTerm) = (;)
 get_values(t::CategoricalTerm) = t.contrasts.levels
 get_values(t::BSplineTerm) = get_values(t.term)
-get_values(t::ContinuousTerm) = (; min=t.min, max=t.max, var=t.var, mean=t.mean)
+get_values(t::ContinuousTerm) = (; min = t.min, max = t.max, var = t.var, mean = t.mean)
 get_values(t::InteractionTerm) = (;)
 
 function extract_variables(model)
