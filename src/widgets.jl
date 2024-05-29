@@ -107,7 +107,6 @@ function formular_text(content; class = "")
 end
 
 function dropdown(name, content)
-
     return DOM.div(
         formular_text(name),
         DOM.div(content; class = "dropdown-content");
@@ -224,16 +223,10 @@ function topoplot_widget(positions; size = ())
         label_scatter = (; strokecolor = :black, strokewidth = 1.0, markersize = 20.0),
     )
 
-
     on(events(h_topo).mousebutton) do event
         if event.button == Mouse.left && event.action == Mouse.press
             plt, p = pick(h_topo)
             if isa(plt, Makie.Scatter)
-                #@debug plt.parent
-                #h_topo.plot.strokecolor[] .= :black
-                #h_topo.plot.strokecolor[][p] = :green
-                #@debug plt.strokecolor
-                #notify(h_topo.plot.strokecolor) # not sure why this is necessary, but oh well..
                 data_obs[] .= 0
                 data_obs[][p] = 1
                 @debug data_obs

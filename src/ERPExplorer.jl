@@ -37,7 +37,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
             channel = Observable(1)
             topo_widget = nothing
         else
-            topo_widget, channel = topoplot_widget(positions; size = size .* 0.3)
+            topo_widget, channel = topoplot_widget(positions; size = size .* 0.5)
         end
         #@debug "mapping" mapping
         #mapping = Observable(Dict(:color => :color, :fruit => :marker))

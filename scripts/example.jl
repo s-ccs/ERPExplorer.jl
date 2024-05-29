@@ -10,6 +10,7 @@ begin
     using Unfold
     using Bonito
     using JuliaFormatter
+    using TopoPlots
 end
 
 include("gen_data.jl")
@@ -20,6 +21,7 @@ dataS, evts, pos2d = gen_data()
 times = range(0, length=size(dataS, 2), step=1 ./ 100)
 model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
-explore(model; positions = pos2d)
+_, positions = TopoPlots.example_data()
+explore(model; positions = positions)
 
 #format_file("scripts/gen_data.jl")
