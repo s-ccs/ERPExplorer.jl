@@ -44,7 +44,7 @@ function formular_widgets(variables)
     widgets = [k => widget(v) for (k, v) in value_ranges]
     checkboxes = [Checkbox(false) for k in value_ranges]
     widget_names = [formular_text("0 ~ 1")]
-    for k = 1:length(widgets)
+    for k in 1:length(widgets)
         c = checkboxes[k]
         name = widgets[k].first
         w = widgets[k].second
@@ -55,6 +55,7 @@ function formular_widgets(variables)
 
     widget_values = map(nw -> nw[2].value, widgets)
     checkbox_values = map(c -> c.value, checkboxes)
+
     widget_signal = lift(widget_values..., checkbox_values...; ignore_equal_values=true) do args...
         result = []
         for i in 1:length(args[1:end/2])
@@ -63,10 +64,9 @@ function formular_widgets(variables)
 
             push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
         end
-    return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)),
-    widget_signal,
-    formular_widget,
-    value_ranges
+        return result
+    end
+    return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)), widget_signal, formular_widget, value_ranges
 end
 
 function effects_signal(model, widget_signal, channel)
@@ -93,7 +93,6 @@ function effects_signal(model, widget_signal, channel)
     end
     return effects_signal
 end
-
 
 
 
@@ -171,21 +170,26 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
             continue
         end
 
-        for (target, pal) in
-            zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
+        for (target, pal) = zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
             if mapping[target] == cat
                 p = cat => (target => Dict(zip(vals, pal)))
                 push!(scatter_styles, p)
             end
         end
     end
-
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
     if isempty(continuous_vars)
         # if no continuous variable, use the scatter-color for plotting
         line_styles = Dict()
 
     else
+        line_styles = Dict(cont => (:colormap => (val, style)) for (style, val, cont) in zip(continuous_styles, continuous_values, continuous_vars) if cont_active[cont])
+    end
+
+    col_term = mapping[:col]
+    row_term = mapping[:row]
+
+    legend_entries = [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]]
 
     row_levels = row_term == :none ? [""] : [v for (v, n) in zip(cat_levels, cat_terms) if n == row_term][1]
     col_levels = col_term == :none ? [""] : [v for (v, n) in zip(cat_levels, cat_terms) if n == col_term][1]
@@ -214,7 +218,7 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
                 # create a new term => values (e.g. animal => [fish,cow] ) Dict
                 create_plot!(plots, subdata, Dict(collect(keys(active_cat_vars)) .=> level_grid), scatter_styles, line_styles, continuous_vars)
             end
-            axes[r_ix, c_ix] = S.Axis(; plots = plots)
+            axes[r_ix, c_ix] = S.Axis(; plots=plots)
         end
     end
 
@@ -232,5 +236,4 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     else
         return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
     end
-
 end

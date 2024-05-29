@@ -11,7 +11,7 @@ get_values(t::ContinuousTerm) = (; min = t.min, max = t.max, var = t.var, mean =
 get_values(t::InteractionTerm) = (;)
 
 function extract_variables(model)
-    ts = Unfold.formulas(model)[1].rhs.terms
+    ts = Unfold.formula(model).rhs.terms
     types = [t.name.name for t in typeof.(ts)]
     symbols = get_sym.(ts)
     names = string.(ts)

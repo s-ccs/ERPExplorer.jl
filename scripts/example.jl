@@ -11,7 +11,6 @@ begin
     using Bonito
 end
 
-include("gen_data.jl")
 #formulaS = @formula(0 ~ 1 +luminance + contrast + saccade_amplitude + string + animal + fruit + color)
 formulaS = @formula(0 ~ 1 + animal + fruit)
 formulaS = @formula(0 ~ 1 + luminance + fruit + animal)
