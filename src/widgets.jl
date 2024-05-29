@@ -60,36 +60,11 @@ function mapping_widget(varnames, var_types)
     cats = [v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]
     push!(cats, :none)
 
-    css = CSS(
-        "font-weight" => 600,
-        "display" => "block",
-        "position" => "absolute",
-        "background-color" => "#f9f9f9",
-        "min-width" => "40px",
-        "right" => "10px",
-        #"box-shadow" => "0px 8px 16px 0px rgba(0,0,0,0.2)",
-        "padding"=> "1px 1px", #size of boxes
-        #"z-index"=> "1",  
-    )
-
-    css1 = CSS(
-        "display" => "table-row-group",
-        "position" => "relative",
-        "right" => "35px",
-        "bottom" => "0px",
-        "padding"=> "1px 40px",
-    )
-    css2 = CSS(
-        #"display" => "table-row-group",
-        "position" => "relative",
-       # "background-color" => "#f9f9f9",
-        "padding"=> "1px 30px 80px",
-    )
-    c_dropdown = Dropdown(cats; index = 1, style = Styles(css))
-    m_dropdown = Dropdown(cats; index = length(cats) - 1, style = Styles(css))
-    l_dropdown = Dropdown(cats; index = length(cats), style = Styles(css))
-    col_dropdown = Dropdown(cats; index = length(cats), style = Styles(css))
-    row_dropdown = Dropdown(cats; index = length(cats), style = Styles(css))
+    c_dropdown = Dropdown(cats; index = 1)
+    m_dropdown = Dropdown(cats; index = length(cats) - 1)
+    l_dropdown = Dropdown(cats; index = length(cats))
+    col_dropdown = Dropdown(cats; index = length(cats))
+    row_dropdown = Dropdown(cats; index = length(cats))
 
     mapping = @lift Dict(
         :color => $(c_dropdown.value),
@@ -99,12 +74,28 @@ function mapping_widget(varnames, var_types)
         :row => $(row_dropdown.value),
     )
 
-    return mapping, Col(
-        Row(DOM.div("color:"), c_dropdown, align_items="center", justify_items="end"),
-        Row(DOM.div("marker:"), m_dropdown, align_items="center", justify_items="end"),
-        Row(DOM.div("linestyle (bug):"), l_dropdown, align_items="center", justify_items="end"),
-        Row(DOM.div("column facet"), col_dropdown, align_items="center", justify_items="end"),
-        Row(DOM.div("row facet"), row_dropdown, align_items="center", justify_items="end"),
+    return mapping,
+    Col(
+        Row(DOM.div("color:"), c_dropdown, align_items = "center", justify_items = "end"),
+        Row(DOM.div("marker:"), m_dropdown, align_items = "center", justify_items = "end"),
+        Row(
+            DOM.div("linestyle (bug):"),
+            l_dropdown,
+            align_items = "center",
+            justify_items = "end",
+        ),
+        Row(
+            DOM.div("column facet"),
+            col_dropdown,
+            align_items = "center",
+            justify_items = "end",
+        ),
+        Row(
+            DOM.div("row facet"),
+            row_dropdown,
+            align_items = "center",
+            justify_items = "end",
+        ),
     )
 end
 function widget(values::Set)
@@ -210,7 +201,7 @@ end
 
 
 
-function topoplot_widget(positions; size=())
+function topoplot_widget(positions; size = ())
 
     strokecolor = Observable(repeat([:red], length(to_value(positions))))
     interactive_scatter = Observable(1)
@@ -221,7 +212,17 @@ function topoplot_widget(positions; size=())
     data_obs = Observable(zeros(length(to_value(positions))))
     data_obs.val[1] = 1
 
-    h_topo = eeg_topoplot(data_obs, nothing; positions=positions, colorrange=colorrange, colormap=colormap, interpolation=UnfoldMakie.NullInterpolator(), figure=(; size=size), axis=(; xzoomlock=true, yzoomlock=true, xrectzoom=false, yrectzoom=false), label_scatter=(; strokecolor=:black, strokewidth=1.0, markersize=20.0))
+    h_topo = eeg_topoplot(
+        data_obs,
+        nothing;
+        positions = positions,
+        colorrange = colorrange,
+        colormap = colormap,
+        interpolation = UnfoldMakie.NullInterpolator(),
+        figure = (; size = size),
+        axis = (; xzoomlock = true, yzoomlock = true, xrectzoom = false, yrectzoom = false),
+        label_scatter = (; strokecolor = :black, strokewidth = 1.0, markersize = 20.0),
+    )
 
 
     on(events(h_topo).mousebutton) do event
