@@ -34,12 +34,7 @@ function value_range(args)
     if (type == :ContinuousTerm) || (type == :BSplineTerm)
         mini = round(Int, default_values.min)
         maxi = round(Int, default_values.max)
-        #if (maxi - mini) < 2
-        #return mini:0.1:maxi
-        #else
-        #return mini:maxi
         return range(mini, maxi, length = 5)
-        #end
     elseif type == :CategoricalTerm
         return Set(default_values)
     else
@@ -168,9 +163,7 @@ function select_vspan(scene; blocking = false, priority = 2, kwargs...)
                 waspressed[] = false
                 r = Makie.absrect(rect[])
                 w, h = widths(r)
-                #if w > 0.0# && h > 0.0 # Ensure that the rectangle has non0 size.
                 rect_ret[] = r
-                #end
             end
             # always hide if not the right key is pressed
             #plotted_span[:visible] = false # make the plotted rectangle invisible
@@ -197,8 +190,6 @@ function rectselect(ax)
     translate!(h, 0, 0, -1) # move to background
     return selrect
 end
-
-
 
 function topoplot_widget(positions; size = ())
 

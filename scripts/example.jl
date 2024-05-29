@@ -18,7 +18,7 @@ include("gen_data.jl")
 formulaS = @formula(0 ~ 1 + animal + fruit)
 formulaS = @formula(0 ~ 1 + luminance + fruit + animal)
 dataS, evts, pos2d = gen_data()
-times = range(0, length=size(dataS, 2), step=1 ./ 100)
+times = range(0, length = size(dataS, 2), step = 1 ./ 100)
 model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
 _, positions = TopoPlots.example_data()
