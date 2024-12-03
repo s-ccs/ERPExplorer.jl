@@ -41,7 +41,7 @@ Return values:
 function formular_widgets(variables)
     value_ranges = [k => value_range(v) for (k, v) in variables]
     widgets = [k => widget(v) for (k, v) in value_ranges]
-    checkboxes = [Checkbox(false) for k in value_ranges]
+    checkboxes = [Bonito.Checkbox(false) for k in value_ranges]
     widget_names = [formular_text("0 ~ 1")]
     for k in 1:length(widgets)
         c = checkboxes[k]
