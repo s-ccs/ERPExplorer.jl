@@ -1,6 +1,6 @@
 function variable_legend(name, values::AbstractRange{<:Number}, palette::Dict)
     range, cmap = palette[:colormap]
-    return S.Colorbar(limits=range, colormap=cmap, label=string(name))
+    return S.Colorbar(limits = range, colormap = cmap, label = string(name))
 end
 
 function variable_legend(name, values::Set, palette::Dict)
@@ -21,13 +21,14 @@ function variable_legend(name, values::Set, palette::Dict)
     end
     conditions = collect(values)
     elements = map(conditions) do c
-        return MarkerElement(marker=marker_lookup(c), color=marker_color_lookup(c))
+        return MarkerElement(marker = marker_lookup(c), color = marker_color_lookup(c))
     end
     return S.Legend(elements, conditions)
 end
 
-widget_value(w::Vector{<:String}; resolution=1) = w
-widget_value(x::Vector; resolution=1) = x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length=5)
+widget_value(w::Vector{<:String}; resolution = 1) = w
+widget_value(x::Vector; resolution = 1) =
+    x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length = 5)
 
 """
     formular_widgets(model_variables)
@@ -43,7 +44,7 @@ function formular_widgets(variables)
     widgets = [k => widget(v) for (k, v) in value_ranges]
     checkboxes = [Bonito.Checkbox(false) for k in value_ranges]
     widget_names = [formular_text("0 ~ 1")]
-    for k in 1:length(widgets)
+    for k = 1:length(widgets)
         c = checkboxes[k]
         name = widgets[k].first
         w = widgets[k].second
@@ -55,27 +56,33 @@ function formular_widgets(variables)
     widget_values = map(nw -> nw[2].value, widgets)
     checkbox_values = map(c -> c.value, checkboxes)
 
-    widget_signal = lift(widget_values..., checkbox_values...; ignore_equal_values=true) do args...
-        result = []
-        for i in 1:length(args[1:end/2])
-            c = args[i+length(args)/2]
-            w = args[i]
+    widget_signal =
+        lift(widget_values..., checkbox_values...; ignore_equal_values = true) do args...
+            result = []
+            for i = 1:length(args[1:end/2])
+                c = args[i+length(args)/2]
+                w = args[i]
 
-            push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
+                push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
+            end
+            return result
         end
-        return result
-    end
-    return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)), widget_signal, formular_widget, value_ranges
+    return Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables)),
+    widget_signal,
+    formular_widget,
+    value_ranges
 end
 
 function effects_signal(model, widget_signal, channel)
-    effects_signal = Observable{Any}(nothing; ignore_equal_values=true)
+    effects_signal = Observable{Any}(nothing; ignore_equal_values = true)
 
-    onany(widget_signal, channel; update=true) do widget_values, chan
+    onany(widget_signal, channel; update = true) do widget_values, chan
 
 
 
-        effect_dict = Dict(k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1])
+        effect_dict = Dict(
+            k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1]
+        )
         @debug effect_dict
         if isempty(effect_dict)
             effect_dict = Dict(:dummy => ["dummy"])
@@ -92,7 +99,6 @@ function effects_signal(model, widget_signal, channel)
     end
     return effects_signal
 end
-
 
 
 
@@ -113,7 +119,10 @@ function create_plot!(plots, data, vars, scatter_styles, line_styles, continuous
 
     #    @debug "create_plot!" scatter_styles vars
     #args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
-    args = [scatter_styles[term][1] => scatter_styles[term][2][val] for (term, val) in vars if term ∈ keys(scatter_styles)]
+    args = [
+        scatter_styles[term][1] => scatter_styles[term][2][val] for
+        (term, val) in vars if term ∈ keys(scatter_styles)
+    ]
 
     if isempty(line_styles)
         line_args = []
@@ -130,22 +139,20 @@ function create_plot!(plots, data, vars, scatter_styles, line_styles, continuous
         line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
         line_args3 = [:color => sub[!, name] for name in continuous_vars]
     end
-    push!(plots, S.Scatter(points; markersize=10, args...))
+    push!(plots, S.Scatter(points; markersize = 10, args...))
 
     push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
     return
 end
 
-
-
-
 """
-    - data: effects(Dict(...),m) output ::DataFrames
-    - value_ranges
-    - cat_terms
-    - continuous_vars
-    - mapping: Dict name=>property
-
+    plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
+    - `data`: effects(Dict(...), m) 
+    - `value_ranges`:
+    - `categorical_vars`:
+    - `continuous_vars`:
+    - `mapping`: Dict name=>property
+output ::DataFrames
 """
 function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     #mapping = Dict(:color => :color, :fruit => :marker)#, :fruit => :linestyle) will work in Makie 0.21
@@ -172,50 +179,58 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
             continue
         end
 
-        for (target, pal) = zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
+        for (target, pal) in
+            zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
             if mapping[target] == cat
                 p = cat => (target => Dict(zip(vals, pal)))
                 push!(scatter_styles, p)
             end
         end
     end
-
-
-
     continuous_values = [extrema(data[!, con]) for con in continuous_vars]
     if isempty(continuous_vars)
         # if no continuous variable, use the scatter-color for plotting
         line_styles = Dict()
 
     else
-        line_styles = Dict(cont => (:colormap => (val, style)) for (style, val, cont) in zip(continuous_styles, continuous_values, continuous_vars) if cont_active[cont])
+        line_styles = Dict(
+            cont => (:colormap => (val, style)) for (style, val, cont) in
+            zip(continuous_styles, continuous_values, continuous_vars) if
+            cont_active[cont]
+        )
     end
-
-
-
 
     col_term = mapping[:col]
     row_term = mapping[:row]
 
+    legend_entries =
+        [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]]
 
-    legend_entries = [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]]
-
-
-    row_levels = row_term == :none ? [""] : [v for (v, n) in zip(cat_levels, cat_terms) if n == row_term][1]
-    col_levels = col_term == :none ? [""] : [v for (v, n) in zip(cat_levels, cat_terms) if n == col_term][1]
+    row_levels =
+        row_term == :none ? [""] :
+        [v for (v, n) in zip(cat_levels, cat_terms) if n == row_term][1]
+    col_levels =
+        col_term == :none ? [""] :
+        [v for (v, n) in zip(cat_levels, cat_terms) if n == col_term][1]
 
     axes = Matrix{Makie.BlockSpec}(undef, length(row_levels), length(col_levels))
 
-
-    for (r_ix, row_level) = enumerate(row_levels)
-        for (c_ix, col_level) = enumerate(col_levels)
+    for (r_ix, row_level) in enumerate(row_levels)
+        for (c_ix, col_level) in enumerate(col_levels)
             plots = PlotSpec[]
             subdata = data
-            subdata = col_term == :none ? data : subset(data, col_term => level -> level .== col_level)
-            subdata = row_term == :none ? subdata : subset(subdata, row_term => level -> level .== row_level)
+            subdata =
+                col_term == :none ? data :
+                subset(data, col_term => level -> level .== col_level)
+            subdata =
+                row_term == :none ? subdata :
+                subset(subdata, row_term => level -> level .== row_level)
 
 
-            active_cat_vars = Dict(term => level for (term, level) in zip(cat_terms, cat_levels) if cat_active[term])# & 
+            active_cat_vars = Dict(
+                term => level for
+                (term, level) in zip(cat_terms, cat_levels) if cat_active[term]
+            )# & 
             if row_term != :none
                 active_cat_vars[row_term] = [row_level]
             end
@@ -227,9 +242,16 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
                     continue
                 end
                 # create a new term => values (e.g. animal => [fish,cow] ) Dict
-                create_plot!(plots, subdata, Dict(collect(keys(active_cat_vars)) .=> level_grid), scatter_styles, line_styles, continuous_vars)
+                create_plot!(
+                    plots,
+                    subdata,
+                    Dict(collect(keys(active_cat_vars)) .=> level_grid),
+                    scatter_styles,
+                    line_styles,
+                    continuous_vars,
+                )
             end
-            axes[r_ix, c_ix] = S.Axis(; plots=plots)
+            axes[r_ix, c_ix] = S.Axis(; plots = plots)
         end
     end
 
@@ -247,5 +269,4 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     else
         return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
     end
-
 end
