@@ -7,4 +7,3 @@ _, positions = TopoPlots.example_data()
 @testset "basic test" begin
     explore(model; positions = positions)
 end
-
