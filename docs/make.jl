@@ -36,7 +36,7 @@ makedocs(;
         "ERPExplorer highlights" => "index.md",
         #"Plotting" => "generated/intro/toposeries.md",
         #"Diagnostics" => "generated/intro/gnostics.md",
-        #"API / DocStrings" => "api.md",
+        "API / DocStrings" => "src/api.md",
     ],
 )
 
