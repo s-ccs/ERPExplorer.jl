@@ -31,10 +31,10 @@ widget_value(x::Vector; resolution = 1) =
     x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length = 5)
 
 """
-    formular_widgets(model_variables)
+    formular_widgets(variables)
 
-Creates widgets to control each variable of a model.
-Return values:
+Creates widgets to control each variable of a model.\\
+**Return Values:**\\
 * `widget_signal`: a signal that emits a dictionary with the current values of the widgets.
 * `formular_widget`: The HTML element that can be displayed to interact with the the widgets
 * `value_ranges`: A dictionary with the value ranges of each variable.
@@ -78,8 +78,6 @@ function effects_signal(model, widget_signal, channel)
 
     onany(widget_signal, channel; update = true) do widget_values, chan
 
-
-
         effect_dict = Dict(
             k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1]
         )
@@ -103,16 +101,20 @@ end
 
 
 """
-- plots is a spec-api list to push into
-- data is the dataframe to be subsetted
-- vars contains the levels to be plotted
+    create_plot!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
+Arguments:\\
+- `plots` - a SpecApi list to push into.\\
+- `data` - a dataframe to be subsetted.\\
+- `vars` contains the levels to be plotted.\\
+
+**Return Value:** .
 """
 function create_plot!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
 
     selector = [(name => x -> x .== var) for (name, var) in vars]
 
     sub = subset(data, selector...)
-    @assert !isempty(sub) "this shouldnt be empty..."
+    @assert !isempty(sub) "this shouldn't be empty..."
     points = Point2f.(sub.time, sub.yhat)
     points[sub.time.≈maximum(sub.time)] .= Ref(Point2f(NaN)) # terrible hack, it will remove the last point from ploitting. better would be to loop the lines! with views of the dataframe...
 
@@ -152,7 +154,7 @@ end
     - `categorical_vars`:
     - `continuous_vars`:
     - `mapping`: Dict name=>property
-output ::DataFrames
+**Return Value:** `DataFrames`.
 """
 function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     #mapping = Dict(:color => :color, :fruit => :marker)#, :fruit => :linestyle) will work in Makie 0.21
