@@ -1,4 +1,6 @@
 const BSplineTerm = Base.get_extension(Unfold, :UnfoldBSplineKitExt).BSplineTerm
+
+
 get_sym(t::InterceptTerm) = ""
 get_sym(t::AbstractTerm) = t.sym
 get_sym(t::BSplineTerm) = t.term.sym
