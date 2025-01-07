@@ -38,5 +38,4 @@ TopoPlots = "0.2"
 Unfold = "0.7"  
 UnfoldMakie = "0.5"  
 UnfoldSim = "0.3"  
-WGLMakie = "0.10"  
-
+WGLMakie = "0.10"
