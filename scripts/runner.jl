@@ -52,5 +52,5 @@ begin
     for i in docs_entries
         format_file(i)
     end
-    cd(".")
+    cd("../")
 end

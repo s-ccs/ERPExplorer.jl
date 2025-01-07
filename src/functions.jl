@@ -46,7 +46,7 @@ Actions:
 - `widget_checkbox`: Dictionary with the current values of the widgets (term => values).
 - `widget_signal`: widget_checkbox but as Observable, a signal that emits a dictionary with the current values of the widgets.
 - `formular_widget`: The HTML element that can be displayed to interact with the the widgets.
-- `value_ranges`: A dictionaryy containing the value ranges of each formula term.
+- `value_ranges`: A dictionary containing the value ranges of each formula term.
 """
 function formular_widgets(variables)
     value_ranges = [k => value_range(v) for (k, v) in variables]
@@ -58,13 +58,18 @@ function formular_widgets(variables)
         c = checkboxes[k]
         w_cat_term = widgets[k].first
         w_value = widgets[k].second
-        push!(widget_names, formular_text("+"), formular_text(c), dropdown(w_cat_term, w_value))
+        push!(
+            widget_names,
+            formular_text("+"),
+            formular_text(c),
+            dropdown(w_cat_term, w_value),
+        )
     end
-    
+
     formular_widget = Row(widget_names...)
     widget_values = map(nw -> nw[2].value, widgets)
     checkbox_values = map(c -> c.value, checkboxes)
-    
+
     widget_signal =
         lift(widget_values..., checkbox_values...; ignore_equal_values = true) do args...
             result = []
@@ -77,34 +82,49 @@ function formular_widgets(variables)
         end
     widget_checkbox = Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables))
 
-    return widget_checkbox,
-    widget_signal,
-    formular_widget,
-    value_ranges
+    return widget_checkbox, widget_signal, formular_widget, value_ranges
 end
 
-function effects_signal(model, widget_signal, channel)
-    effects_signal = Observable{Any}(nothing; ignore_equal_values = true)
+"""
+    yhats_signal(model, widget_signal, channel)
+Creates a dictionary with yhat values and more.\\
+
+Arguments:\\
+- `model::UnfoldLinearModel{Float64}` - vector of key-value pairs with information about the model formula terms.
+- `widget_signal::Observable{Vector{Any}}` - a signal that emits a dictionary with the current values of the widgets.
+- `channel::Observable{Int64}` - number of selected channel- 
+
+Actions:
+- Compute predicted value (yhat) of the given model using `effects`.
+- Create `DataFrame` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.
+- Make it Observable.
+
+**Return Value:** `yhats_signal::Observable{Any}` containing DataFrame with yhats. 
+"""
+function yhats_signal(model, widget_signal, channel)
+
+    yhats_signal = Observable{Any}(nothing; ignore_equal_values = true)
 
     onany(widget_signal, channel; update = true) do widget_values, chan
-
-        effect_dict = Dict(
+        yhat_dict = Dict(
             k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1]
         )
-        if isempty(effect_dict)
-            effect_dict = Dict(:dummy => ["dummy"])
+        if isempty(yhat_dict)
+            yhat_dict = Dict(:dummy => ["dummy"])
         end
-        eff = effects(effect_dict, model)
+        yhats = effects(yhat_dict, model)
+
         for (k, wv) in widget_values
             if isempty(wv[2]) || !wv[1]
-                eff[!, k] .= "typical_value"
+                yhats[!, k] .= "typical_value"
             end
         end
 
-        filter!(x -> x.channel == chan, eff)
-        effects_signal[] = eff
+        filter!(x -> x.channel == chan, yhats)
+        yhats_signal[] = yhats
     end
-    return effects_signal
+
+    return yhats_signal
 end
 
 

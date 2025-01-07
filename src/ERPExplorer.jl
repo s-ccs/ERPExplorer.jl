@@ -22,6 +22,27 @@ include("functions.jl")
 include("widgets.jl")
 include("plot_data.jl")
 
+"""
+    explore(model::UnfoldModel; positions = nothing, size = (700, 600))
+Run the dashboard for explorative ERP analysis.
+
+Arguments:\\
+- `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and continuous terms.
+- `positions::Vector{Point{2, Float32}}` - x an y coordinates of the channels.
+- `size::Tuple{Float64, Float64}` - size of the topoplot panel.
+
+Actions:
+- Extract formula terms and itheir features.
+- Create interactive formula with checkboxes. 
+- Arrange and map dropdown menus.
+- Create interactive topoplot.
+- Create Observable DataFrame with predicted values (yhats) and more.
+- Create `GridLayout`.
+- Use `Base.ReentrantLock`, a synchronization primitive_ to manage concurrent access to shared resources in multi-threaded programs
+
+
+**Return Value:** `res::Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
+"""
 function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
     App() do
         variables = extract_variables(model)
@@ -39,9 +60,8 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         else
             topo_widget, channel = topoplot_widget(positions; size = size .* 0.5)
         end
-        #@debug "mapping" mapping
-        #mapping = Observable(Dict(:color => :color, :fruit => :marker))
-        eff_signal = effects_signal(model, widget_signal, channel)
+
+        yhats_sig = yhats_signal(model, widget_signal, channel)
         on(mapping) do m
             ws = widget_signal.val
             ks_m = values(m)
@@ -50,11 +70,12 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
                 widget_checkbox[k][] = k ∈ ks_m
             end
         end
+
         obs = Observable(S.GridLayout())
         l = Base.ReentrantLock()
-        Makie.onany_latest(eff_signal, mapping; update = true) do eff, mapping # update = true means only, that it is run once immediately
+
+        Makie.onany_latest(yhats_sig, mapping; update = true) do eff, mapping # update = true means only, that it is run once immediately
             lock(l) do
-                #var_types = map(x -> x[2][3], variables)
                 obs[] = plot_data(
                     eff,
                     value_ranges,
@@ -67,7 +88,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         end
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
         fig = plot(obs; figure = (size = size,))
-        return DOM.div(
+        res = DOM.div(
             css,
             Bonito.TailwindCSS,
             Grid(
@@ -90,6 +111,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
                 "position" => :relative,
             ),
         )
+        return res
     end
 end
 export explore

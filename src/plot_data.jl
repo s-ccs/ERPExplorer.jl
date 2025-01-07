@@ -1,16 +1,21 @@
 
 """
     plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
-- `data`: effects(Dict(...), m) 
-- `value_ranges`:
-- `categorical_vars`:
-- `continuous_vars`:
-- `mapping`: Dict name=>property.
+Plotting an interactive dashboard.
 
-**Return Value:** `DataFrames`.
+Action:
+- Create default palletes for colors, markers, line styles and colorstyles for continuous values.
+
+ Arguments:
+- `data::DataFrame` - the result of `effects(Dict(...), model) ` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term..
+- `value_ranges::Vector{Pair{Symbol}}` - value range for continuous variables, levels for categorical.
+- `categorical_vars::Vector{Symbol}` - categorical terms.
+- `continuous_vars::Vector{Symbol}` - continuous terms.
+- `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.
+
+**Return Value:** `Makie.GridLayoutSpec`.
 """
 function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
-    #mapping = Dict(:color => :color, :fruit => :marker)#, :fruit => :linestyle) will work in Makie 0.21
     mapping = to_value(mapping_obs)
 
     mpalette = [:circle, :xcross, :star4, :diamond]
@@ -23,7 +28,7 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     # is the formula term even active?
     cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in cat_terms)
     cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_vars)
-    #    @debug "active?" cat_active cont_active
+
     # get the categorical values
     cat_levels = [unique(data[!, cat]) for cat in cat_terms]
 

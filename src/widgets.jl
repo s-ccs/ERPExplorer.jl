@@ -53,7 +53,7 @@ end
 
 """
     mapping_dropdowns(varnames, var_types)
-Maps dropdown menus on the left panel of the Figure.\\
+Map and arrange dropdown menus on the left panel of the dashboard.\\
 
 Arguments:\\
 - `varnames::Vector{Symbol}` - vector of the model formula terms.
@@ -87,7 +87,7 @@ function mapping_dropdowns(varnames, var_types)
         :col => $(col_dropdown.value),
         :row => $(row_dropdown.value),
     )
-    mapping_dom =  Col(
+    mapping_dom = Col(
         Row(DOM.div("color:"), c_dropdown, align_items = "center", justify_items = "end"),
         Row(DOM.div("marker:"), m_dropdown, align_items = "center", justify_items = "end"),
         Row(
@@ -210,9 +210,27 @@ function rectselect(ax)
     return selrect
 end
 
-function topoplot_widget(positions; size = ())
+"""
+    topoplot_widget(positions; size = ())
+Controls the topoplot in the lower left panel of the figure.\\
+Highlight the location of the current electrode and allows electrode selection.
 
-    strokecolor = Observable(repeat([:red], length(to_value(positions))))
+Arguments:\\
+- `positions::Vector{Point{2, Float32}}` - x an y coordinates of the channels.
+- `size::Tuple{Float64, Float64}` - size of the topoplot panel.
+
+Actions:
+- Create interactive scatter.
+- Highlight the selected electrode with white color, others are grayed out. 
+- Create a topolot with a null interpolator and define its style and behavior.
+- Hide decorations and spines. 
+
+**Return Values:**
+- `h_topo::Makie.FigureAxisPlot` - topoplot widget.
+- `interactive_scatter::Observable{Int64}` - number of the selected channel.
+"""
+function topoplot_widget(positions; size = ())
+    strokecolor = Observable(repeat([:red], length(to_value(positions)))) # crashing
     interactive_scatter = Observable(1)
 
     colorrange = vcat(0, 1)
@@ -239,7 +257,6 @@ function topoplot_widget(positions; size = ())
             if isa(plt, Makie.Scatter)
                 data_obs[] .= 0
                 data_obs[][p] = 1
-                @debug data_obs
                 notify(data_obs)
                 interactive_scatter[] = p
             end
@@ -248,7 +265,6 @@ function topoplot_widget(positions; size = ())
     end
     hidedecorations!(h_topo.axis)
     hidespines!(h_topo.axis)
-    #xlims!(h_topo.axis, [-0.25 1.25])
     return h_topo, interactive_scatter
 
 end
