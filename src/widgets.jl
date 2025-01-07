@@ -51,7 +51,26 @@ function widget(range::AbstractRange{<:Number})
     return range_slider
 end
 
-function mapping_widget(varnames, var_types)
+"""
+    mapping_dropdowns(varnames, var_types)
+Maps dropdown menus on the left panel of the Figure.\\
+
+Arguments:\\
+- `varnames::Vector{Symbol}` - vector of the model formula terms.
+- `var_types::Vector{Symbol}` - vector of types of the model formula terms.
+
+Actions:
+- Take categorical variables and put their values into dropdown menus.
+- There will be 5 menus for: color, markers, line styles, column and row facets.
+- Map each menu object with its name on the Figure.
+- Create HTML containers using Document Object Model (DOM) from Bonito. 
+- Arrange containers on the panel using Col() and Row(). Specify their styling.
+
+**Return Values:**
+- `mapping::Observable{Dict{Symbol, Symbol}}` - interactive dictionary with menus and their default value.
+- `mapping_dom::Hyperscript.Node{Hyperscript.HTMLSVG}` - dropdown menus in HTML code with styling and layout.
+"""
+function mapping_dropdowns(varnames, var_types)
     cats = [v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]
     push!(cats, :none)
 
@@ -68,9 +87,7 @@ function mapping_widget(varnames, var_types)
         :col => $(col_dropdown.value),
         :row => $(row_dropdown.value),
     )
-
-    return mapping,
-    Col(
+    mapping_dom =  Col(
         Row(DOM.div("color:"), c_dropdown, align_items = "center", justify_items = "end"),
         Row(DOM.div("marker:"), m_dropdown, align_items = "center", justify_items = "end"),
         Row(
@@ -92,6 +109,8 @@ function mapping_widget(varnames, var_types)
             justify_items = "end",
         ),
     )
+    return mapping, mapping_dom
+
 end
 function widget(values::Set)
     return SelectSet(collect(values))

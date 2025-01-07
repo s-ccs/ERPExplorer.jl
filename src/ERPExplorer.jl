@@ -24,7 +24,6 @@ include("plot_data.jl")
 
 function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
     App() do
-        #formular = Unfold.formula(model)
         variables = extract_variables(model)
         widget_checkbox, widget_signal, widget_dom, value_ranges =
             formular_widgets(variables)
@@ -32,7 +31,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         var_types = map(x -> x[2][3], variables)
         varnames = first.(variables)
 
-        mapping, mapping_dom = mapping_widget(varnames, var_types)
+        mapping, mapping_dom = mapping_dropdowns(varnames, var_types)
 
         if isnothing(positions)
             channel = Observable(1)

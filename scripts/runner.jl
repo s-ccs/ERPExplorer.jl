@@ -11,6 +11,7 @@ begin
     using Bonito
     using JuliaFormatter
     using TopoPlots
+    ENV["JULIA_DEBUG"] = "ERPExplorer"
 end
 
 
@@ -51,4 +52,5 @@ begin
     for i in docs_entries
         format_file(i)
     end
+    cd(".")
 end
