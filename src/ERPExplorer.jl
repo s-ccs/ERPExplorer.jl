@@ -20,6 +20,7 @@ using TopoPlots
 include("formula_extractor.jl")
 include("functions.jl")
 include("widgets.jl")
+include("plot_data.jl")
 
 function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
     App() do
