@@ -29,3 +29,8 @@ Colors = "0.12, 0.13"
 GeometryBasics = "0.4, 0.5"
 JuliaFormatter = "1"
 Test = "1.11.0"
+Bonito = "4"
+BSplineKit = "0.17"
+TopoPlots = "0.2"
+Unfold = "0.7"
+
