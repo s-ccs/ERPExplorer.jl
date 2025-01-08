@@ -1,38 +1,7 @@
-function variable_legend(name, values::AbstractRange{<:Number}, palette::Dict)
-    range, cmap = palette[:colormap]
-    return S.Colorbar(limits = range, colormap = cmap, label = string(name))
-end
-
-function variable_legend(name, values::Set, palette::Dict)
-
-    marker_color_lookup = (x) -> begin
-        if haskey(palette, :color)
-            return get(palette[:color], x, :black)
-        else
-            return :black
-        end
-    end
-    marker_lookup = (x) -> begin
-        if haskey(palette, :marker)
-            return palette[:marker][x]
-        else
-            return :rect
-        end
-    end
-    conditions = collect(values)
-    elements = map(conditions) do c
-        return MarkerElement(marker = marker_lookup(c), color = marker_color_lookup(c))
-    end
-    return S.Legend(elements, conditions)
-end
-
-widget_value(w::Vector{<:String}; resolution = 1) = w
-widget_value(x::Vector; resolution = 1) =
-    x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length = 5)
-
 """
     formular_widgets(variables)
 Creates widgets to control each variable of a model.\\
+
 Arguments:\\
 - `variables::Vector{Pair{Symbol}}` - vector of key-value pairs with information about the model formula terms.
 
@@ -125,53 +94,4 @@ function yhats_signal(model, widget_signal, channel)
     end
 
     return yhats_signal
-end
-
-
-"""
-    create_plot!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
-
-Arguments:\\
-- `plots` - a SpecApi list to push into.\\
-- `data` - a DataFrame to be subsetted.\\
-- `vars` contains the levels to be plotted.\\
-
-**Return Value:** .
-"""
-function create_plot!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
-
-    selector = [(name => x -> x .== var) for (name, var) in vars]
-
-    sub = subset(data, selector...)
-    @assert !isempty(sub) "this shouldn't be empty..."
-    points = Point2f.(sub.time, sub.yhat)
-    points[sub.time.≈maximum(sub.time)] .= Ref(Point2f(NaN)) # terrible hack, it will remove the last point from ploitting. better would be to loop the lines! with views of the dataframe...
-
-
-    #    @debug "create_plot!" scatter_styles vars
-    #args = [kw => vals[val] for (val, (name, (kw, vals))) in zip(vars, scatter_styles)]
-    args = [
-        scatter_styles[term][1] => scatter_styles[term][2][val] for
-        (term, val) in vars if term ∈ keys(scatter_styles)
-    ]
-
-    if isempty(line_styles)
-        line_args = []
-        line_args2 = []
-        line_args3 = args
-
-        if !isempty(args) && !any(x -> x[1] .== :color, line_args3)
-            push!(args, :color => :black)
-        end
-
-
-    else
-        line_args = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
-        line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
-        line_args3 = [:color => sub[!, name] for name in continuous_vars]
-    end
-    push!(plots, S.Scatter(points; markersize = 10, args...))
-
-    push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
-    return
 end
