@@ -3,19 +3,19 @@
 Run the dashboard for explorative ERP analysis.
 
 Arguments:\\
-- `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and continuous terms.
-- `positions::Vector{Point{2, Float32}}` - x an y coordinates of the channels.
-- `size::Tuple{Float64, Float64}` - size of the topoplot panel.
+- `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and continuous terms.\\
+- `positions::Vector{Point{2, Float32}}` - x an y coordinates of the channels.\\
+- `size::Tuple{Float64, Float64}` - size of the topoplot panel.\\
 
-Actions:
-- Extract formula terms and itheir features.
-- Create interactive formula with checkboxes. 
-- Arrange and map dropdown menus.
-- Create interactive topoplot.
-- Create Observable DataFrame with predicted values (yhats) and more.
-- Create `GridLayout`.
-- Use `Base.ReentrantLock`, a synchronization primitive_ to manage concurrent access to shared resources in multi-threaded programs
-- Create Figure.
+Actions:\\
+- Extract formula terms and itheir features.\\
+- Create interactive formula with checkboxes.\\
+- Arrange and map dropdown menus.\\
+- Create interactive topoplot.\\
+- Create Observable DataFrame with predicted values (yhats) and more.\\
+- Create `GridLayout`.\\
+- Use `Base.ReentrantLock`, a synchronization primitive_ to manage concurrent access to shared resources in multi-threaded programs\\
+- Create Figure.\\
 - Translate into into HTML code using DOMs.
 
 **Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.

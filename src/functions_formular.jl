@@ -6,16 +6,16 @@ Arguments:\\
 - `variables::Vector{Pair{Symbol}}` - vector of key-value pairs with information about the model formula terms.
 
 Actions:
-- Extract ranges of term values.
-- Create widgets for each term (`Slider` for continuous, `SelectSet` for categorical).
-- Creating the formula with checkboxes and translating to HTML code. 
-- Convert checkboxes to Observables. 
+- Extract ranges of term values.\\
+- Create widgets for each term (`Slider` for continuous, `SelectSet` for categorical).\\
+- Creating the formula with checkboxes and translating to HTML code.\\
+- Convert checkboxes to Observables.\\ 
 
-**Return Values:**
-- `widget_checkbox`: Dictionary with the current values of the widgets (term => values).
-- `widget_signal`: widget_checkbox but as Observable, a signal that emits a dictionary with the current values of the widgets.
-- `formular_widget`: The HTML element that can be displayed to interact with the the widgets.
-- `value_ranges`: A dictionary containing the value ranges of each formula term.
+**Return Values:**\\
+- `widget_checkbox`: Dictionary with the current values of the widgets (term => values).\\
+- `widget_signal`: widget_checkbox but as Observable, a signal that emits a dictionary with the current values of the widgets.\\
+- `formular_widget`: The HTML element that can be displayed to interact with the the widgets.\\
+- `value_ranges`: A dictionary containing the value ranges of each formula term.\\
 """
 function formular_widgets(variables)
     value_ranges = [k => value_range(v) for (k, v) in variables]
@@ -59,14 +59,14 @@ end
 Creates a dictionary with yhat values and more.\\
 
 Arguments:\\
-- `model::UnfoldLinearModel{Float64}` - vector of key-value pairs with information about the model formula terms.
-- `widget_signal::Observable{Vector{Any}}` - a signal that emits a dictionary with the current values of the widgets.
-- `channel::Observable{Int64}` - number of selected channel- 
+- `model::UnfoldLinearModel{Float64}` - vector of key-value pairs with information about the model formula terms.\\
+- `widget_signal::Observable{Vector{Any}}` - a signal that emits a dictionary with the current values of the widgets.\\
+- `channel::Observable{Int64}` - number of selected channels.\\
 
-Actions:
-- Compute predicted value (yhat) of the given model using `effects`.
-- Create `DataFrame` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.
-- Make it Observable.
+Actions:\\
+- Compute predicted value (yhat) of the given model using `effects`.\\
+- Create `DataFrame` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.\\
+- Make it Observable.\\
 
 **Return Value:** `yhats_signal::Observable{Any}` containing DataFrame with yhats. 
 """

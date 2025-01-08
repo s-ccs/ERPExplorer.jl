@@ -3,18 +3,18 @@
     plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
 Plotting an interactive dashboard.
 
- Arguments:
-- `data::DataFrame` - the result of `effects(Dict(...), model) ` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term..
-- `value_ranges::Vector{Pair{Symbol}}` - value range for continuous variables, levels for categorical.
-- `categorical_vars::Vector{Symbol}` - categorical terms.
-- `continuous_vars::Vector{Symbol}` - continuous terms.
-- `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.
+ Arguments:\\
+- `data::DataFrame` - the result of `effects(Dict(...), model) ` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.\\
+- `value_ranges::Vector{Pair{Symbol}}` - value range for continuous variables, levels for categorical.\\
+- `categorical_vars::Vector{Symbol}` - categorical terms.\\
+- `continuous_vars::Vector{Symbol}` - continuous terms.\\
+- `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.\\
 
-Action:
-- Create default palettes for colors, markers, line styles, and color styles for continuous values.
-- Check that the terms are not empty.
-- Plot the dashboard.
-- Define line and scatter styles for the line plot.
+Action:\\
+- Create default palettes for colors, markers, line styles, and color styles for continuous values.\\
+- Check that the terms are not empty.\\
+- Plot the dashboard.\\
+- Define line and scatter styles for the line plot.\\
 - Add line and scatter styles to the legend.
 
 **Return Value:** `Makie.GridLayoutSpec`.
@@ -141,16 +141,17 @@ end
     define_scatter_line_style!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
 Define styling of lines and points (scatter).
 
-- subset the data.
-- select points and plot scatter. Define scatter style: markersize and color.
-- plot lines and define line style: colormap, color range, color.
+Actions:\\
+- subset the data.\\
+- select points and plot scatter. Define scatter style: markersize and color.\\
+- plot lines and define line style: colormap, color range, color.\\
 
 Arguments:\\
 - `plots::Vector{Makie.PlotSpec}` - an empty SpecApi list to push into parts of the layout.\\
 - `data::DataFrame` - a DataFrame with predicted values to be subsetted.\\
 - `vars::Dict{Any, Any}` contains the levels to be plotted.\\
-- `scatter_styles::Dict{Any, Any}` - define colors of scatter. 
-- `line_styles:: Dict{Symbol, Pair{Symbol, Tuple{Tuple{String, String}, Symbol}}}` - define line styles: colormap, color range, color.
+- `scatter_styles::Dict{Any, Any}` - define colors of scatter.\\
+- `line_styles:: Dict{Symbol, Pair{Symbol, Tuple{Tuple{String, String}, Symbol}}}` - define line styles: colormap, color range, color.\\
 - `continuous_vars::Vector{Symbol}` - continuous terms.
 
 **Return Value:** `Makie.GridLayoutSpec`.

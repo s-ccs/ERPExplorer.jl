@@ -19,11 +19,11 @@ Takes the Unfold model and extract variables from it for future functions.
 Arguments:\\
 - `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and continuous terms.
 
-These variables are:
-- `names` - all terms of the model. 
-- `symbols`- non-numeric terms of the model.
+These variables are:\\
+- `names` - all terms of the model.\\
+- `symbols`- non-numeric terms of the model.\\
 - `types` - types of terms.\\
-- `vals` - min, max, variance, mean for continuous terms, levels for categorical terms. 
+- `vals` - min, max, variance, mean for continuous terms, levels for categorical terms.\\ 
 
 **Return Values:** `Vector{Pair{Symbol}}`.
 """
