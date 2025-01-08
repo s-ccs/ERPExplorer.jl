@@ -25,12 +25,12 @@ UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
+BSplineKit = "0.17"
+Bonito = "4"
 Colors = "0.12, 0.13"
+DataFramesMeta = "0.15"
 GeometryBasics = "0.4, 0.5"
 JuliaFormatter = "1"
 Test = "1.11.0"
-Bonito = "4"
-BSplineKit = "0.17"
 TopoPlots = "0.2"
 Unfold = "0.7"
-
