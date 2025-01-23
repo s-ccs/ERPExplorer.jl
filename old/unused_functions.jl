@@ -115,35 +115,3 @@ function Bonito.jsrender(s::Session, selector::SelectSet)
     end
     return Bonito.jsrender(s, Card(Col(rows...)))
 end
-
-function variable_legend(name, values::AbstractRange{<:Number}, palette::Dict)
-    range, cmap = palette[:colormap]
-    return S.Colorbar(limits = range, colormap = cmap, label = string(name))
-end
-
-function variable_legend(name, values::Set, palette::Dict)
-    marker_color_lookup = (x) -> begin
-        if haskey(palette, :color)
-            return get(palette[:color], x, :black)
-        else
-            return :black
-        end
-    end
-    marker_lookup = (x) -> begin
-        if haskey(palette, :marker)
-            return palette[:marker][x]
-        else
-            return :rect
-        end
-    end
-    conditions = collect(values)
-    elements = map(conditions) do c
-        return MarkerElement(marker = marker_lookup(c), color = marker_color_lookup(c))
-    end
-    return S.Legend(elements, conditions)
-end
-
-
-widget_value(w::Vector{<:String}; resolution = 1) = w
-widget_value(x::Vector; resolution = 1) =
-    x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length = 5)

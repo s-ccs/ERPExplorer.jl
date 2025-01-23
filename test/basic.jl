@@ -7,5 +7,5 @@ begin
 end
 
 @testset "basic test" begin
-    explore(model; positions = positions)
+    ERPExplorer.explore(model; positions = positions)
 end
