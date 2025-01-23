@@ -37,7 +37,6 @@ function widget(values::Set)
 end
 
 function widget(range::AbstractRange{<:Number})
-
     range_slider = RangeSlider(range; value = Any[minimum(range), maximum(range)])
 
     range_slider.ticks[] = Dict("mode" => "range", "density" => 10)
