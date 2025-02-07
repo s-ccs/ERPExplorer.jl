@@ -26,7 +26,7 @@ WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
 Bonito = "4"  
-BSplineKit = "0.17"  
+BSplineKit = "0.17, 0.18"  
 Colors = "0.12, 0.13"  
 GeometryBasics = "0.4, 0.5"  
 JuliaFormatter = "1"  
