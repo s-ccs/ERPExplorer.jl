@@ -4,13 +4,8 @@ begin
     Pkg.status()
     using Revise
     using ERPExplorer
-    using UnfoldSim
-    using DataFrames
-    using Random
-    using Unfold
-    using Bonito
-    using JuliaFormatter
-    using TopoPlots
+
+    include("../test/setup.jl")
     ENV["JULIA_DEBUG"] = "ERPExplorer"
 end
 
