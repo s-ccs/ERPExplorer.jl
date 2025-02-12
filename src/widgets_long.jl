@@ -40,7 +40,7 @@ function mapping_dropdowns(varnames, var_types)
         Row(DOM.div("color:"), c_dropdown, align_items = "center", justify_items = "end"),
         Row(DOM.div("marker:"), m_dropdown, align_items = "center", justify_items = "end"),
         Row(
-            DOM.div("linestyle (bug):"),
+            DOM.div("linestyle:"), #bug
             l_dropdown,
             align_items = "center",
             justify_items = "end",
