@@ -21,7 +21,7 @@ Actions:\\
 **Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
 """
 function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
-    App() do
+    myapp = App() do
         variables = extract_variables(model)
         widget_checkbox, widget_signal, widget_dom, value_ranges =
             formular_widgets(variables)
@@ -49,17 +49,23 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         end
 
         obs = Observable(S.GridLayout())
+
         l = Base.ReentrantLock()
 
         Makie.onany_latest(yhats_sig, mapping; update = true) do eff, mapping # update = true means only, that it is run once immediately
             lock(l) do
-                obs[] = plot_data(
+                _tmp = plot_data(
                     eff,
                     value_ranges,
                     varnames[var_types.==:CategoricalTerm],
                     varnames[var_types.==:ContinuousTerm],
                     mapping,
                 )
+
+                #try 
+                obs[] = _tmp
+                #catch
+                #end
             end
             return
         end

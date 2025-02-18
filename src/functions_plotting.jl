@@ -20,51 +20,26 @@ Action:\\
 **Return Value:** `Makie.GridLayoutSpec`.
 """
 function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
+    # Convert observable mapping to values
     mapping = to_value(mapping_obs)
 
-    mpalette = [:circle, :xcross, :star4, :diamond]
-    cpalette = Makie.wong_colors()
-    lpalette = [:solid, :dot, :dash]
-    continuous_styles = [:viridis, :heat, :RdBu]
-
-    #cat_styles = [:color => cpalette, :marker => mpalette]
-
-    # is the formula term even active?
+    # Identify activated categorical and continuous variables
     cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in cat_terms)
     cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_vars)
 
-    # get the categorical values
+    # Retrieve unique categorical levels
     cat_levels = [unique(data[!, cat]) for cat in cat_terms]
 
-    # define what is mapped according to what for categorical
-    scatter_styles = Dict()
-
-    for (vals, cat) in zip(cat_levels, cat_terms)
-        if !cat_active[cat]
-            continue
-        end
-
-        for (target, pal) in
-            zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
-            if mapping[target] == cat
-                p = cat => (target => Dict(zip(vals, pal)))
-                push!(scatter_styles, p)
-            end
-        end
-    end
-
-    continuous_values = [extrema(data[!, con]) for con in continuous_vars]
-    if isempty(continuous_vars)
-        # if no continuous variable, use the scatter-color for plotting
-        line_styles = Dict()
-
-    else
-        line_styles = Dict(
-            cont => (:colormap => (val, style)) for (style, val, cont) in
-            zip(continuous_styles, continuous_values, continuous_vars) if
-            cont_active[cont]
-        )
-    end
+    # Prepare styles for categorical and continuous variables
+    scatter_styles, line_styles = prepare_styles(
+        data,
+        cat_terms,
+        continuous_vars,
+        mapping,
+        cat_active,
+        cont_active,
+        cat_levels,
+    )
 
     col_term = mapping[:col]
     row_term = mapping[:row]
@@ -79,18 +54,16 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
         col_term == :none ? [""] :
         [v for (v, n) in zip(cat_levels, cat_terms) if n == col_term][1]
 
+
+    # Initialize matrix of plot axes
     axes = Matrix{Makie.BlockSpec}(undef, length(row_levels), length(col_levels))
 
     for (r_ix, row_level) in enumerate(row_levels)
         for (c_ix, col_level) in enumerate(col_levels)
             plots = PlotSpec[]
-            subdata = data
-            subdata =
-                col_term == :none ? data :
-                subset(data, col_term => level -> level .== col_level) # Why subdata is overwritten?
-            subdata =
-                row_term == :none ? subdata :
-                subset(subdata, row_term => level -> level .== row_level)
+
+            # Filter data based on row and column levels
+            subdata = filter_facet_data(data, row_term, col_term, row_level, col_level)
 
             active_cat_vars = Dict(
                 term => level for
@@ -102,6 +75,7 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
             if col_term != :none
                 active_cat_vars[col_term] = [col_level]
             end
+            # Iterate over categorical levels to define styles
             for level_grid in Iterators.product(collect(values(active_cat_vars))...)
                 if !isempty(level_grid) && level_grid[1] .== "typical_value"
                     continue
@@ -137,63 +111,62 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
 end
 
 
-"""
-    define_scatter_line_style!(plots, data, vars, scatter_styles, line_styles, continuous_vars)
-Define styling of lines and points (scatter).
-
-Actions:\\
-- subset the data.\\
-- select points and plot scatter. Define scatter style: markersize and color.\\
-- plot lines and define line style: colormap, color range, color.\\
-
-Arguments:\\
-- `plots::Vector{Makie.PlotSpec}` - an empty SpecApi list to push into parts of the layout.\\
-- `data::DataFrame` - a DataFrame with predicted values to be subsetted.\\
-- `vars::Dict{Any, Any}` contains the levels to be plotted.\\
-- `scatter_styles::Dict{Any, Any}` - define colors of scatter.\\
-- `line_styles:: Dict{Symbol, Pair{Symbol, Tuple{Tuple{String, String}, Symbol}}}` - define line styles: colormap, color range, color.\\
-- `continuous_vars::Vector{Symbol}` - continuous terms.
-
-**Return Value:** `Makie.GridLayoutSpec`.
-"""
-function define_scatter_line_style!(
-    plots,
+function prepare_styles(
     data,
-    vars,
-    scatter_styles,
-    line_styles,
+    cat_terms,
     continuous_vars,
+    mapping,
+    cat_active,
+    cont_active,
+    cat_levels,
 )
-    selector = [(name => x -> x .== var) for (name, var) in vars]
+    # Define palettes for markers, colors, line and ?? styles
+    mpalette = [:circle, :xcross, :star4, :diamond]
+    cpalette = Makie.wong_colors()
+    lpalette = [:solid, :dot, :dash]
+    continuous_styles = [:viridis, :heat, :RdBu]
 
-    sub = subset(data, selector...) # but len(data) and len(sub) are equal...
+    # Assign styles to categorical variables
+    scatter_styles = Dict()
 
-    @assert !isempty(sub) "this shouldn't be empty..."
-    points = Point2f.(sub.time, sub.yhat)
-    points[sub.time.≈maximum(sub.time)] .= Ref(Point2f(NaN)) # terrible hack, it will remove the last point from ploitting. better would be to loop the lines! with views of the dataframe...
-
-    args = [
-        scatter_styles[term][1] => scatter_styles[term][2][val] for
-        (term, val) in vars if term ∈ keys(scatter_styles)
-    ]
-
-    if isempty(line_styles)
-        line_args = []
-        line_args2 = []
-        line_args3 = args
-
-        if !isempty(args) && !any(x -> x[1] .== :color, line_args3)
-            push!(args, :color => :black)
+    for (vals, cat) in zip(cat_levels, cat_terms)
+        if !cat_active[cat]
+            continue
         end
 
-    else
-        line_args = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
-        line_args2 = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
-        line_args3 = [:color => sub[!, name] for name in continuous_vars]
-        @debug line_args
+        for (target, pal) in
+            zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
+            if mapping[target] == cat
+                p = cat => (target => Dict(zip(vals, pal)))
+                push!(scatter_styles, p)
+            end
+        end
     end
-    push!(plots, S.Scatter(points; markersize = 10, args...))
+    # Assign styles to continuous variables
+    continuous_values = [extrema(data[!, con]) for con in continuous_vars]
+    if isempty(continuous_vars)
+        # if no continuous variable, use the scatter-color for plotting
+        line_styles = Dict()
 
-    push!(plots, S.Lines(points; line_args..., line_args2..., line_args3...))
-    return
+    else
+        line_styles = Dict(
+            cont => (:colormap => (val, style)) for (style, val, cont) in
+            zip(continuous_styles, continuous_values, continuous_vars) if
+            cont_active[cont]
+        )
+    end
+    return scatter_styles, line_styles
+end
+
+
+function filter_facet_data(data, row_term, col_term, row_level, col_level)
+    # Subset data based on row and column levels
+    subdata = data
+    if col_term != :none
+        subdata = subset(subdata, col_term => ByRow(==(col_level)))
+    end
+    if row_term != :none
+        subdata = subset(subdata, row_term => ByRow(==(row_level)))
+    end
+    return subdata
 end
