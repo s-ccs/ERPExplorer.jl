@@ -44,13 +44,13 @@ function define_scatter_line_style!(
         line_cmap = []
         line_crange = []
         line_color = args
-        if isempty(args) || !any(x -> x[1] .== :color, args)
+        if isempty(args) || !any(x -> x[1] == :color, args)
             push!(args, :color => :black) # default color for lines
         end
 
     else
-        line_cmap = [kw => cmap for (name, (kw, (lims, cmap))) in line_styles]
-        line_crange = [:colorrange => lims for (name, (kw, (lims, cmap))) in line_styles]
+        line_cmap = [kw => cmap for (_, (kw, (_, cmap))) in line_styles]
+        line_crange = [:colorrange => lims for (_, (_, (lims, _))) in line_styles]
         line_color = [:color => sub[!, name] for name in continuous_vars]
 
     end

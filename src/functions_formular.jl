@@ -1,6 +1,6 @@
 """
-    formular_widgets(variables)
-Creates widgets to control each variable of a model.\\
+    formula_DOMs(variables)
+Create widgets to control all model variables.\\
 
 Arguments:\\
 - `variables::Vector{Pair{Symbol}}` - vector of key-value pairs with information about the model formula terms.
@@ -12,15 +12,15 @@ Actions:
 - Convert checkboxes to Observables.\\ 
 
 **Return Values:**\\
-- `widget_checkbox`: Dictionary with the current values of the widgets (term => values).\\
-- `widget_signal`: widget_checkbox but as Observable, a signal that emits a dictionary with the current values of the widgets.\\
-- `formular_widget`: The HTML element that can be displayed to interact with the the widgets.\\
-- `value_ranges`: A dictionary containing the value ranges of each formula term.\\
+- `formula_defaults::Dict{Symbol, Observable{Bool}}` - formula widgets with default values.\\
+- `formula_toggle::Observable{Vector{Any}}` - formula widgets with all values and toggle value.\\
+- `formula_DOM::Hyperscript.Node{Hyperscript.HTMLSVG}` - HTML element that can be displayed to interact with the the formula.\\
+- `formula_values::Vector{Pair{Symbol}}` - formula widgets with all values.\\
 """
 function formular_widgets(variables)
-    value_ranges = [k => value_range(v) for (k, v) in variables]
-    widgets = [k => widget(v) for (k, v) in value_ranges]
-    checkboxes = [Bonito.Checkbox(false) for k in value_ranges]
+    formula_values = [k => value_range(v) for (k, v) in variables]
+    widgets = [k => widget(v) for (k, v) in formula_values]
+    checkboxes = [Bonito.Checkbox(false) for k in formula_values]
     widget_names = [formular_text("0 ~ 1")]
 
     for k = 1:length(widgets)
@@ -35,11 +35,11 @@ function formular_widgets(variables)
         )
     end
 
-    formular_widget = Row(widget_names...)
+    formula_DOM = Row(widget_names...)
     widget_values = map(nw -> nw[2].value, widgets)
     checkbox_values = map(c -> c.value, checkboxes)
 
-    widget_signal =
+    formula_toggle =
         lift(widget_values..., checkbox_values...; ignore_equal_values = true) do args...
             result = []
             for i = 1:length(args[1:end/2])
@@ -49,13 +49,13 @@ function formular_widgets(variables)
             end
             return result
         end
-    widget_checkbox = Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables))
+    formula_defaults = Dict(k => c for (c, (k, v)) in zip(checkbox_values, variables))
 
-    return widget_checkbox, widget_signal, formular_widget, value_ranges
+    return formula_defaults, formula_toggle, formula_DOM, formula_values
 end
 
 """
-    yhats_signal(model, widget_signal, channel)
+    get_ERP_data(model, widget_signal, channel)
 Creates a dictionary with yhat values and more.\\
 
 Arguments:\\
@@ -70,7 +70,7 @@ Actions:\\
 
 **Return Value:** `yhats_signal::Observable{Any}` containing DataFrame with yhats. 
 """
-function yhats_signal(model, widget_signal, channel)
+function get_ERP_data(model, widget_signal, channel)
 
     yhats_signal = Observable{Any}(nothing; ignore_equal_values = true)
 

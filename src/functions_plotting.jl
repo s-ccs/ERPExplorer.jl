@@ -1,7 +1,7 @@
 
 """
-    plot_data(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
-Plotting an interactive dashboard.
+    update_grid(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
+Plotting and updating an interactive dashboard.
 
  Arguments:\\
 - `data::DataFrame` - the result of `effects(Dict(...), model) ` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.\\
@@ -19,14 +19,14 @@ Action:\\
 
 **Return Value:** `Makie.GridLayoutSpec`.
 """
-function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
+function update_grid(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
     # Convert observable mapping to values
     mapping = to_value(mapping_obs)
 
     # Identify activated categorical and continuous variables
     cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in cat_terms)
     cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_vars)
-
+#@debug cat_active
     # Retrieve unique categorical levels
     cat_levels = [unique(data[!, cat]) for cat in cat_terms]
 
@@ -93,7 +93,6 @@ function plot_data(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
             axes[r_ix, c_ix] = S.Axis(; plots = plots)
         end
     end
-
     palettes = merge(line_styles, scatter_styles)
 
     legends = Union{Nothing,Makie.BlockSpec}[]
