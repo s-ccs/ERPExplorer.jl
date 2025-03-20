@@ -10,6 +10,7 @@ Arguments:\\
 **Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
 """
 function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
+    Bonito.set_cleanup_time!(1) # wait one hour before closing session
     # Initialize the App from Bonito. App allows to wrap all interactive elements and to deploy them
     myapp = App() do
         # Extract formula terms and their features from the model.
@@ -26,14 +27,12 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         mapping, mapping_dom = mapping_dropdowns(var_names, var_types)
 
         # Create interactive topoplot widget on the lower left panel of the dashboard.
-        channel_chosen = Observable(1)
+        channel_chosen = Observable(4)
         if isnothing(positions)   
             topo_widget = nothing
         else
             topo_widget = topoplot_widget(positions, channel_chosen; size = size .* 0.5)
- # Problem: does it update?
         end
-
         # Create Observable DataFrame with predicted values (yhats) of the model.
         ERP_data = get_ERP_data(model, formula_toggle, channel_chosen)
 
@@ -44,7 +43,6 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
             ks_ft = [t.first for t in ft]
             for k in ks_ft
                 formula_defaults[k][] = k ∈ ks_m
-                @debug "x" formula_defaults[k][]
             end
         end
 
