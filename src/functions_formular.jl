@@ -55,13 +55,13 @@ function formular_widgets(variables)
 end
 
 """
-    get_ERP_data(model, widget_signal, channel)
+    get_ERP_data(model, formula_toggle, channel_chosen)
 Creates a dictionary with yhat values and more.\\
 
 Arguments:\\
 - `model::UnfoldLinearModel{Float64}` - vector of key-value pairs with information about the model formula terms.\\
-- `widget_signal::Observable{Vector{Any}}` - a signal that emits a dictionary with the current values of the widgets.\\
-- `channel::Observable{Int64}` - number of selected channels.\\
+- `formula_toggle::Observable{Vector{Any}}` - a signal that emits a dictionary with the current values of the widgets.\\
+- `channel_chosen::Observable{Int64}` - number of selected channels.\\
 
 Actions:\\
 - Compute predicted value (yhat) of the given model using `effects`.\\
@@ -70,11 +70,10 @@ Actions:\\
 
 **Return Value:** `yhats_signal::Observable{Any}` containing DataFrame with yhats. 
 """
-function get_ERP_data(model, widget_signal, channel)
+function get_ERP_data(model, formula_toggle, channel_chosen)
+    ERP_data = Observable{Any}(nothing; ignore_equal_values = true)
 
-    yhats_signal = Observable{Any}(nothing; ignore_equal_values = true)
-
-    onany(widget_signal, channel; update = true) do widget_values, chan
+    onany(formula_toggle, channel_chosen; update = true) do widget_values, chan
         yhat_dict = Dict(
             k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1]
         )
@@ -82,16 +81,16 @@ function get_ERP_data(model, widget_signal, channel)
             yhat_dict = Dict(:dummy => ["dummy"])
         end
         yhats = effects(yhat_dict, model)
+    
 
         for (k, wv) in widget_values
             if isempty(wv[2]) || !wv[1]
                 yhats[!, k] .= "typical_value"
             end
         end
-
         filter!(x -> x.channel == chan, yhats)
-        yhats_signal[] = yhats
+        ERP_data[] = yhats
     end
 
-    return yhats_signal
+    return ERP_data
 end

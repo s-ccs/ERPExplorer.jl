@@ -85,15 +85,14 @@ Actions:\\
 function topoplot_widget(positions, channel_chosen; size = ())
     strokecolor = Observable(repeat([:red], length(to_value(positions)))) # crashing
     #channel_chosen = Observable(1)
-
     colorrange = vcat(0, 1)
     colormap = vcat(Gray(0.5), Gray(1))
 
-    data_obs = Observable(zeros(length(to_value(positions))))
-    data_obs.val[1] = 1
+    marker_list = Observable(zeros(length(to_value(positions))))
+    marker_list.val[1] = 1
 
     topo_widget = eeg_topoplot(
-        data_obs,
+        marker_list,
         nothing;
         positions = positions,
         colorrange = colorrange,
@@ -108,12 +107,11 @@ function topoplot_widget(positions, channel_chosen; size = ())
         if event.button == Mouse.left && event.action == Mouse.press
             plt, p = pick(topo_widget)
             if isa(plt, Makie.Scatter)
-                data_obs[] .= 0
-                data_obs[][p] = 1
-                notify(data_obs)
+                marker_list[] .= 0
+                marker_list[][p] = 1
+                notify(marker_list)
                 channel_chosen[] = p
             end
-
         end
     end
     hidedecorations!(topo_widget.axis)
