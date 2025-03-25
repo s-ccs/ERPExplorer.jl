@@ -41,17 +41,16 @@ function define_scatter_line_style!(
         (term, val) in dict_grid if term ∈ keys(scatter_styles)
     ]
 
-    # define style for lines 
+    # define style for lines and scatter
     if isempty(line_styles)
         line_cmap = []
         line_crange = []
 
-        line_color = args
-        if isempty(args) || !any(x -> x[1] == :color, args)
-            args = convert(Vector{Pair{Symbol, Any}}, args)
-            push!(args, :color => RGBA(0.0f0, 0.0f0, 0.0f0, 1.0f0)) # set scatte color to default black
-            line_color = [:color => Dict(args)[:color]] # set line color to default black
+        args = convert(Vector{Pair{Symbol, Any}}, args)
+        if isempty(args) || !any(x -> x[1] == :color, args)  
+            push!(args, :color => RGBA(0.0f0, 0.0f0, 0.0f0, 1.0f0)) # set scatter color to default black 
         end
+        line_color = [:color => Dict(args)[:color]]
 
     else # if contionus terms are present
         line_cmap = [kw => cmap for (_, (kw, (_, cmap))) in line_styles]

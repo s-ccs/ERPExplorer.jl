@@ -1,13 +1,13 @@
 
 """
-    update_grid(data, value_ranges, categorical_vars, continuous_vars, mapping_obs)
+    update_grid(data, formula_values, categorical_vars, continuous_terms, mapping_obs)
 Plotting and updating an interactive dashboard.
 
  Arguments:\\
 - `data::DataFrame` - the result of `effects(Dict(...), model) ` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.\\
-- `value_ranges::Vector{Pair{Symbol}}` - value range for continuous variables, levels for categorical.\\
+- `formula_values::Vector{Pair{Symbol}}` - value range for continuous variables, levels for categorical.\\
 - `categorical_vars::Vector{Symbol}` - categorical terms.\\
-- `continuous_vars::Vector{Symbol}` - continuous terms.\\
+- `continuous_terms::Vector{Symbol}` - continuous terms.\\
 - `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.\\
 
 Action:\\
@@ -19,33 +19,33 @@ Action:\\
 
 **Return Value:** `Makie.GridLayoutSpec`.
 """
-function update_grid(data, value_ranges, cat_terms, continuous_vars, mapping_obs)
+function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_obs)
     # Convert observable mapping to values
     mapping = to_value(mapping_obs)
 
-    # Identify activated categorical and continuous variables
+    # Identify is categorical term activated
     cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in cat_terms)
-    cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_vars)
-#@debug cat_active
-    # Retrieve unique categorical levels
-    cat_levels = [unique(data[!, cat]) for cat in cat_terms]
+    # Identify is continuous term activated
+    cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_terms)
+    # Retrieve levels for selected and unselected categorical terms
+    cat_levels = [unique(data[!, cat]) for cat in cat_terms] # empty unless selected
 
     # Prepare styles for categorical and continuous variables
     scatter_styles, line_styles = prepare_styles(
         data,
         cat_terms,
-        continuous_vars,
+        continuous_terms,
         mapping,
         cat_active,
         cont_active,
         cat_levels,
     )
 
-    col_term = mapping[:col]
-    row_term = mapping[:row]
+    col_term = mapping[:col] # not used yet
+    row_term = mapping[:row] # not used yet
 
     legend_entries =
-        [n => v for (n, v) in value_ranges if merge(cat_active, cont_active)[n]]
+        [n => v for (n, v) in formula_values if merge(cat_active, cont_active)[n]]
 
     row_levels =
         row_term == :none ? [""] :
@@ -75,45 +75,45 @@ function update_grid(data, value_ranges, cat_terms, continuous_vars, mapping_obs
             if col_term != :none
                 active_cat_vars[col_term] = [col_level]
             end
+
             # Iterate over categorical levels to define styles
             for level_grid in Iterators.product(collect(values(active_cat_vars))...)
                 if !isempty(level_grid) && level_grid[1] .== "typical_value"
                     continue
                 end
-                # create a new term => values (e.g. animal => [fish,cow] ) Dict
+                dict_grid = Dict(collect(keys(active_cat_vars)) .=> level_grid)
                 define_scatter_line_style!(
                     plots,
                     subdata,
-                    Dict(collect(keys(active_cat_vars)) .=> level_grid),
+                    dict_grid,
                     scatter_styles,
                     line_styles,
-                    continuous_vars,
+                    continuous_terms,
                 )
             end
-            axes[r_ix, c_ix] = S.Axis(; plots = plots)
+            axes[r_ix, c_ix] = S.Axis(; plots = plots)           
         end
     end
     palettes = merge(line_styles, scatter_styles)
 
-    legends = Union{Nothing,Makie.BlockSpec}[]
+    legends = Union{Nothing, Makie.BlockSpec}[]
     for (term, levels) in legend_entries
         if haskey(palettes, term)
             push!(legends, variable_legend(term, levels, Dict(palettes[term])))
         end
     end
-
-    if isempty(legends)
-        return S.GridLayout(axes)
-    else
-        return S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
-    end
+    res = S.GridLayout([
+        (1, 1) => S.GridLayout(axes), 
+        (:, 2) => S.GridLayout(legends)
+    ])
+    return res
 end
 
 
 function prepare_styles(
     data,
     cat_terms,
-    continuous_vars,
+    continuous_terms,
     mapping,
     cat_active,
     cont_active,
@@ -127,30 +127,28 @@ function prepare_styles(
 
     # Assign styles to categorical variables
     scatter_styles = Dict()
-
     for (vals, cat) in zip(cat_levels, cat_terms)
         if !cat_active[cat]
             continue
         end
-
         for (target, pal) in
             zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
-            if mapping[target] == cat
+            if mapping[target] == cat 
                 p = cat => (target => Dict(zip(vals, pal)))
                 push!(scatter_styles, p)
             end
         end
     end
     # Assign styles to continuous variables
-    continuous_values = [extrema(data[!, con]) for con in continuous_vars]
-    if isempty(continuous_vars)
+    continuous_values = [extrema(data[!, con]) for con in continuous_terms]
+    if isempty(continuous_terms)
         # if no continuous variable, use the scatter-color for plotting
         line_styles = Dict()
 
     else
         line_styles = Dict(
             cont => (:colormap => (val, style)) for (style, val, cont) in
-            zip(continuous_styles, continuous_values, continuous_vars) if
+            zip(continuous_styles, continuous_values, continuous_terms) if
             cont_active[cont]
         )
     end

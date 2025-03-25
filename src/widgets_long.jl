@@ -1,19 +1,17 @@
-
-
 """
     mapping_dropdowns(varnames, var_types)
-Map and arrange dropdown menus on the left panel of the dashboard.\\
+Map and arrange drop-down menus on the left panel of the dashboard.\\
 
 Arguments:\\
 - `varnames::Vector{Symbol}` - vector of the model formula terms.\\
 - `var_types::Vector{Symbol}` - vector of types of the model formula terms.\\
 
 Actions:\\
-- Take categorical variables and put their values into dropdown menus.\\
+- Take categorical variables and put their values into drop-down menus.\\
 - There will be 5 menus for: color, markers, line styles, column and row facets.\\
-- Map each menu object with its name on the Figure.\\
-- Create HTML containers using Document Object Model (DOM) from Bonito.\\
-- Arrange containers on the panel using Col() and Row(). Specify their styling.\\
+- Map each menu object to its name in the image.\\
+- Create HTML containers using Bonito's Document Object Model (DOM).\\
+- Arrange the containers on the panel using Col() and Row(). Specify their styling.\\
 
 **Return Values:**\\
 - `mapping::Observable{Dict{Symbol, Symbol}}` - interactive dictionary with menues and their default value.\\

@@ -27,7 +27,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         mapping, mapping_dom = mapping_dropdowns(var_names, var_types)
 
         # Create interactive topoplot widget on the lower left panel of the dashboard.
-        channel_chosen = Observable(4)
+        channel_chosen = Observable(1)
         if isnothing(positions)   
             topo_widget = nothing
         else
@@ -47,7 +47,8 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         end
 
         # Create a new empty grid layout
-        plot_layout = Observable(S.GridLayout())
+        
+        global plot_layout = Observable(S.GridLayout())
        
         # Create a new reentrant mutex (mutual exclusion) lock for safe thread synchronization during plot updates
         # mutex - allows only one thread to access protected code at a time
@@ -73,7 +74,6 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
 
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
         fig = plot(plot_layout; figure = (size = size,))
-
         # Create header, sidebar, topo and content (figure) panels
         cards = Grid(
             Card(formula_DOM, style = Styles("grid-area" => "header")),
