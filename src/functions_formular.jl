@@ -73,17 +73,22 @@ Actions:\\
 function get_ERP_data(model, formula_toggle, channel_chosen)
     ERP_data = Observable{Any}(nothing; ignore_equal_values = true)
 
-    onany(formula_toggle, channel_chosen; update = true) do widget_values, chan
-        yhat_dict = Dict(
-            k => widget_value(wv[2]) for (k, wv) in widget_values if !isempty(wv) && wv[1]
-        )
+    onany(formula_toggle, channel_chosen; update = true) do formula_toggle_on, chan
+        # Initialize an empty dictionary
+        yhat_dict = Dict{Symbol,Any}()
+        # Populate yhat_dict with valid entries
+        for (k, v) in formula_toggle_on # k is term name, v is activation status and term values
+            if !isempty(v) && v[1]
+                yhat_dict[k] = widget_value(v[2])
+            end
+        end
+        # Assign a default value if yhat_dict remains empty
         if isempty(yhat_dict)
             yhat_dict = Dict(:dummy => ["dummy"])
         end
+        # Compute predicted value (yhat) of the given model using effects
         yhats = effects(yhat_dict, model)
-    
-
-        for (k, wv) in widget_values
+        for (k, wv) in formula_toggle_on
             if isempty(wv[2]) || !wv[1]
                 yhats[!, k] .= "typical_value"
             end

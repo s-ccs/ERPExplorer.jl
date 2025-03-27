@@ -28,7 +28,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
 
         # Create interactive topoplot widget on the lower left panel of the dashboard.
         channel_chosen = Observable(1)
-        if isnothing(positions)   
+        if isnothing(positions)
             topo_widget = nothing
         else
             topo_widget = topoplot_widget(positions, channel_chosen; size = size .* 0.5)
@@ -37,7 +37,7 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         ERP_data = get_ERP_data(model, formula_toggle, channel_chosen)
 
         # when m changes update formula_defaults
-        on(mapping) do m 
+        on(mapping) do m
             ft = formula_toggle.val
             ks_m = values(m)
             ks_ft = [t.first for t in ft]
@@ -47,9 +47,9 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         end
 
         # Create a new empty grid layout
-        
-        global plot_layout = Observable(S.GridLayout())
-       
+
+        plot_layout = Observable(S.GridLayout())
+
         # Create a new reentrant mutex (mutual exclusion) lock for safe thread synchronization during plot updates
         # mutex - allows only one thread to access protected code at a time
         # reentrant - allows the same thread to acquire the lock multiple times without causing a deadlock

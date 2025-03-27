@@ -46,8 +46,8 @@ function define_scatter_line_style!(
         line_cmap = []
         line_crange = []
 
-        args = convert(Vector{Pair{Symbol, Any}}, args)
-        if isempty(args) || !any(x -> x[1] == :color, args)  
+        args = convert(Vector{Pair{Symbol,Any}}, args)
+        if isempty(args) || !any(x -> x[1] == :color, args)
             push!(args, :color => RGBA(0.0f0, 0.0f0, 0.0f0, 1.0f0)) # set scatter color to default black 
         end
         line_color = [:color => Dict(args)[:color]]
@@ -57,6 +57,7 @@ function define_scatter_line_style!(
         line_crange = [:colorrange => lims for (_, (_, (lims, _))) in line_styles]
         line_color = [:color => sub[!, name] for name in continuous_vars]
     end
+
     push!(plots, S.Scatter(points; markersize = 10, args...))
     push!(plots, S.Lines(points; line_cmap..., line_crange..., line_color...))
     return

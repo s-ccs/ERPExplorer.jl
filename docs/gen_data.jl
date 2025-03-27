@@ -5,15 +5,15 @@ function gen_data(n_channels = 64)
     n_timepoints = size(d1, 1)
 
     # Generate distinct EEG signals per channel
-    dataS = [ 
+    dataS = [
         d1 .+                                             # Keep ERP amplitude the same
         3 * sin.(0.1 * pi * i .+ rand() * 2π) .+          # Different slow oscillatory drift
         2 * sin.(0.3 * pi * i .* (1:n_timepoints)) .+     # Mid-frequency variation per channel
         randn(size(d1)) .* 5 .+                           # Add fine-grained channel-specific noise
         circshift(d1, rand(-10:10)) .* 0.2                # Random small time shift for variation
-        for i in 1:n_channels
+        for i = 1:n_channels
     ]
-    dataS = permutedims(cat(dataS..., dims=3), (3, 1, 2))
+    dataS = permutedims(cat(dataS..., dims = 3), (3, 1, 2))
     dataS = dataS .+ rand(dataS)
 
     evts = insertcols(

@@ -46,7 +46,8 @@ end
 
 widget_value(w::Vector{<:String}; resolution = 1) = w
 widget_value(x::Vector; resolution = 1) =
-    x[1] ≈ x[end] ? Float64[] : range(Float64(x[1]), Float64(x[end]), length = 5)
+    x[1] ≈ x[end] ? (x[1], x[end] - 1e-10) :
+    range(Float64(x[1]), Float64(x[end]), length = 5)
 
 
 function formular_text(content; class = "")

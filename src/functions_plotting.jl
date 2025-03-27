@@ -26,7 +26,8 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
     # Identify is categorical term activated
     cat_active = Dict(cat => data[1, cat] != "typical_value" for cat in cat_terms)
     # Identify is continuous term activated
-    cont_active = Dict(cont => data[1, cont] != "typical_value" for cont in continuous_terms)
+    cont_active =
+        Dict(cont => data[1, cont] != "typical_value" for cont in continuous_terms)
     # Retrieve levels for selected and unselected categorical terms
     cat_levels = [unique(data[!, cat]) for cat in cat_terms] # empty unless selected
 
@@ -91,21 +92,19 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
                     continuous_terms,
                 )
             end
-            axes[r_ix, c_ix] = S.Axis(; plots = plots)           
+            axes[r_ix, c_ix] = S.Axis(; plots = plots)
         end
     end
     palettes = merge(line_styles, scatter_styles)
 
-    legends = Union{Nothing, Makie.BlockSpec}[]
+    legends = Union{Nothing,Makie.BlockSpec}[]
     for (term, levels) in legend_entries
         if haskey(palettes, term)
             push!(legends, variable_legend(term, levels, Dict(palettes[term])))
         end
     end
-    res = S.GridLayout([
-        (1, 1) => S.GridLayout(axes), 
-        (:, 2) => S.GridLayout(legends)
-    ])
+
+    res = S.GridLayout([(1, 1) => S.GridLayout(axes), (:, 2) => S.GridLayout(legends)])
     return res
 end
 
@@ -133,7 +132,7 @@ function prepare_styles(
         end
         for (target, pal) in
             zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
-            if mapping[target] == cat 
+            if mapping[target] == cat
                 p = cat => (target => Dict(zip(vals, pal)))
                 push!(scatter_styles, p)
             end
@@ -141,16 +140,21 @@ function prepare_styles(
     end
     # Assign styles to continuous variables
     continuous_values = [extrema(data[!, con]) for con in continuous_terms]
-    if isempty(continuous_terms)
+    # Check for equal min/max values
+
+    if isempty(continuous_terms) ||
+       isempty(continuous_values) ||
+       continuous_values[1] == Float64 && continuous_values[1] == continuous_values[2]
         # if no continuous variable, use the scatter-color for plotting
         line_styles = Dict()
 
     else
+        active_terms = filter(cont -> cont_active[cont], continuous_terms)
         line_styles = Dict(
             cont => (:colormap => (val, style)) for (style, val, cont) in
-            zip(continuous_styles, continuous_values, continuous_terms) if
-            cont_active[cont]
+            zip(continuous_styles, continuous_values, active_terms)
         )
+
     end
     return scatter_styles, line_styles
 end
