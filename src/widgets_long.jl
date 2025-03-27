@@ -21,8 +21,8 @@ function mapping_dropdowns(varnames, var_types)
     cats = [v for (ix, v) in enumerate(varnames) if var_types[ix] == :CategoricalTerm]
     push!(cats, :none)
 
-    c_dropdown = Dropdown(cats; index = 1)
-    m_dropdown = Dropdown(cats; index = length(cats) - 1)
+    c_dropdown = Dropdown(cats; index = length(cats)) #index is the default value
+    m_dropdown = Dropdown(cats; index = length(cats))
     l_dropdown = Dropdown(cats; index = length(cats))
     col_dropdown = Dropdown(cats; index = length(cats))
     row_dropdown = Dropdown(cats; index = length(cats))

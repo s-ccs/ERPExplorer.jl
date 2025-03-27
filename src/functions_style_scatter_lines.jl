@@ -1,5 +1,5 @@
 """
-    define_scatter_line_style!(plots, data, dict_grid, scatter_styles, line_styles, continuous_vars)
+    define_style_scatter_lines!(plots, data, dict_grid, scatter_styles, line_styles, continuous_vars)
 Define styling of lines and points (scatter).
 
 Actions:\\
@@ -17,7 +17,7 @@ Arguments:\\
 
 **Return Value:** `Makie.GridLayoutSpec`.
 """
-function define_scatter_line_style!(
+function define_style_scatter_lines!(
     plots,
     data,
     dict_grid,

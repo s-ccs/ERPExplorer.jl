@@ -1,5 +1,5 @@
 """
-    formula_DOMs(variables)
+    formular_widgets(variables)
 Create widgets to control all model variables.\\
 
 Arguments:\\

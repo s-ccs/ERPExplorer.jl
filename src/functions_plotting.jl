@@ -83,7 +83,7 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
                     continue
                 end
                 dict_grid = Dict(collect(keys(active_cat_vars)) .=> level_grid)
-                define_scatter_line_style!(
+                define_style_scatter_lines!(
                     plots,
                     subdata,
                     dict_grid,

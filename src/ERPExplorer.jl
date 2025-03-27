@@ -21,9 +21,8 @@ include("explore.jl")
 include("functions_preprocessing.jl")
 include("functions_formular.jl")
 include("functions_plotting.jl")
-include("functions_scatter_linestyle.jl")
+include("functions_style_scatter_lines.jl")
 include("widgets_short.jl")
 include("widgets_long.jl")
-
 
 end
