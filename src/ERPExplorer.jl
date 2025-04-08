@@ -6,7 +6,6 @@ import Makie.SpecApi as S
 
 using BSplineKit
 using Unfold
-using UnfoldMakie
 using WGLMakie
 using Bonito
 using Random

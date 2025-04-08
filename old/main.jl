@@ -14,7 +14,6 @@ pkg"precompile"
 
 using BSplineKit
 using Unfold
-using UnfoldMakie
 using UnfoldSim
 using WGLMakie
 using JSServe

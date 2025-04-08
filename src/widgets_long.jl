@@ -95,7 +95,7 @@ function topoplot_widget(positions, channel_chosen; size = ())
         positions = positions,
         colorrange = colorrange,
         colormap = colormap,
-        interpolation = UnfoldMakie.NullInterpolator(),
+        interpolation = TopoPlots.NullInterpolator(),
         figure = (; size = size),
         axis = (; xzoomlock = true, yzoomlock = true, xrectzoom = false, yrectzoom = false),
         label_scatter = (; strokecolor = :black, strokewidth = 1.0, markersize = 20.0),
