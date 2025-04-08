@@ -97,7 +97,7 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
     end
     palettes = merge(line_styles, scatter_styles)
 
-    legends = Union{Nothing,Makie.BlockSpec}[]
+    legends = Union{Nothing, Makie.BlockSpec}[]
     for (term, levels) in legend_entries
         if haskey(palettes, term)
             push!(legends, variable_legend(term, levels, Dict(palettes[term])))
