@@ -74,6 +74,10 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
 
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
         fig = plot(plot_layout; figure = (size = size,))
+        
+        # terrible hack to remove the legend protrution at the beginning
+        ERPExplorer.Makie.colsize!(fig.figure.layout,2,(1))
+
         # Create header, sidebar, topo and content (figure) panels
         cards = Grid(
             Card(formula_DOM, style = Styles("grid-area" => "header")),
