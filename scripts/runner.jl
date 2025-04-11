@@ -9,7 +9,7 @@ begin
     ENV["JULIA_DEBUG"] = "ERPExplorer"
 end
 
-
+Pkg.activate("scripts")
 include("gen_data.jl")
 #formulaS = @formula(0 ~ 1 +luminance + contrast + saccade_amplitude + string + animal + fruit + color)
 formulaS = @formula(0 ~ 1 + animal + fruit)

@@ -17,7 +17,7 @@ srate = pyconvert(Float64, raw.info["sfreq"])
 events.latency .= events.onset .* srate
 eeg_data, times = Unfold.epoch(eeg_data_2, events, (-0.5, 1), srate)
 
-formulaS = @formula(0 ~ 1 + duration + fix_type)
+formulaS = @formula(0 ~ 1 + duration + fix_avgpupilsize)
 model = Unfold.fit(UnfoldModel, formulaS, events, eeg_data, times)
 
 _, positions = TopoPlots.example_data()
