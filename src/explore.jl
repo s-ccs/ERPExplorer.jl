@@ -18,6 +18,13 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         # Create formula widgets for each term.
         formula_defaults, formula_toggle, formula_DOM, formula_values =
             formular_widgets(variables)
+        reset_button = Bonito.Button(
+            "Reset view";
+            style = Styles(
+                "padding" => "4px 8px",
+                "min-height" => "24px",
+            ),
+        )
 
         # Extract variable names and types from the model.
         var_types = map(x -> x[2][3], variables)
@@ -28,10 +35,30 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
 
         # Create interactive topoplot widget on the lower left panel of the dashboard.
         channel_chosen = Observable(1)
-        if isnothing(positions)
+        topo_widget = nothing
+        topo_size = size .* 0.5
+        if positions isa AbstractDict || positions isa NamedTuple
+            pos_sets = Dict{String,Any}()
+            for (k, v) in pairs(positions)
+                pos_sets[string(k)] = v
+            end
+            pos_keys = collect(keys(pos_sets))
+            topo_select = Dropdown(pos_keys; index = 1)
+            topo_widget_obs =
+                Observable{Any}(topoplot_widget(pos_sets[pos_keys[1]], channel_chosen; size = topo_size))
+            on(topo_select.value) do key
+                channel_chosen[] = 1
+                topo_widget_obs[] =
+                    topoplot_widget(pos_sets[key], channel_chosen; size = topo_size)
+            end
+            topo_widget = Col(
+                Row(DOM.div("Topoplot:"), topo_select, align_items = "center"),
+                topo_widget_obs,
+            )
+        elseif isnothing(positions)
             topo_widget = nothing
         else
-            topo_widget = topoplot_widget(positions, channel_chosen; size = size .* 0.5)
+            topo_widget = topoplot_widget(positions, channel_chosen; size = topo_size)
         end
         # Create Observable DataFrame with predicted values (yhats) of the model.
         ERP_data = get_ERP_data(model, formula_toggle, channel_chosen)
@@ -58,8 +85,10 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
         lk = Base.ReentrantLock()
 
         # Update the the grid layout
+        render_count = Ref(0)
         Makie.onany_latest(ERP_data, mapping; update = true) do ERP_data, mapping # `update = true` means that it will run once immediately
             lock(lk) do
+                t0 = time_ns()
                 _tmp = update_grid(
                     ERP_data,
                     formula_values,
@@ -68,19 +97,49 @@ function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
                     mapping,
                 )
                 plot_layout[] = _tmp
+                render_count[] += 1
+                elapsed_ms = (time_ns() - t0) / 1e6
+                println("render #", render_count[], " update_grid -> layout in ", round(elapsed_ms; digits = 2), " ms")
             end
             return
         end
 
         css = Asset(joinpath(@__DIR__, "..", "style.css"))
         fig = plot(plot_layout; figure = (size = size,))
+
+        on(reset_button.value) do _
+            function collect_axes!(acc, item)
+                if item isa Makie.Axis
+                    push!(acc, item)
+                elseif item isa Makie.GridLayoutBase.GridLayout
+                    for child in Makie.GridLayoutBase.contents(item)
+                        collect_axes!(acc, child)
+                    end
+                elseif item isa Makie.Figure
+                    for child in item.content
+                        collect_axes!(acc, child)
+                    end
+                end
+            end
+
+            axes = Makie.Axis[]
+            collect_axes!(axes, fig.figure)
+            for ax in axes
+                Makie.reset_limits!(ax)
+                Makie.autolimits!(ax)
+            end
+        end
         
-        # terrible hack to remove the legend protrution at the beginning
-        ERPExplorer.Makie.colsize!(fig.figure.layout,2,(1))
 
         # Create header, sidebar, topo and content (figure) panels
+        header_dom = Row(
+            formula_DOM,
+            reset_button;
+            align_items = "center",
+            justify_content = "space-between",
+        )
         cards = Grid(
-            Card(formula_DOM, style = Styles("grid-area" => "header")),
+            Card(header_dom, style = Styles("grid-area" => "header")),
             Card(mapping_dom, style = Styles("grid-area" => "sidebar")),
             Card(topo_widget, style = Styles("grid-area" => "topo")),
             Card(fig, style = Styles("grid-area" => "content"));
