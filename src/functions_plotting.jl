@@ -32,7 +32,7 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
     cat_levels = [unique(data[!, cat]) for cat in cat_terms] # empty unless selected
 
     # Prepare styles for categorical and continuous variables
-    scatter_styles, line_styles = prepare_styles(
+    scatter_styles, line_attributes = prepare_styles(
         data,
         cat_terms,
         continuous_terms,
@@ -88,14 +88,14 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
                     subdata,
                     dict_grid,
                     scatter_styles,
-                    line_styles,
+                    line_attributes,
                     continuous_terms,
                 )
             end
             axes[r_ix, c_ix] = S.Axis(; plots = plots)
         end
     end
-    palettes = merge(line_styles, scatter_styles)
+    palettes = merge(line_attributes, scatter_styles)
 
     legends = Union{Nothing, Makie.BlockSpec}[]
     for (term, levels) in legend_entries
@@ -118,11 +118,13 @@ function prepare_styles(
     cont_active,
     cat_levels,
 )
-    # Define palettes for markers, colors, line and ?? styles
+    # Define categorical styles
     mpalette = [:circle, :xcross, :star4, :diamond]
     cpalette = Makie.wong_colors()
+
+    # Define contionous styles
     lpalette = [:solid, :dot, :dash]
-    continuous_styles = [:viridis, :heat, :RdBu]
+    colormaps = [:viridis, :heat, :RdBu]
 
     # Assign styles to categorical variables
     scatter_styles = Dict()
@@ -131,32 +133,41 @@ function prepare_styles(
             continue
         end
         for (target, pal) in
-            zip([:color, :marker, :linestyle], (cpalette, mpalette, lpalette))
+            zip([:color, :marker], (cpalette, mpalette))
             if mapping[target] == cat
                 p = cat => (target => Dict(zip(vals, pal)))
                 push!(scatter_styles, p)
             end
         end
     end
+    @debug scatter_styles
     # Assign styles to continuous variables
     continuous_values = [extrema(data[!, con]) for con in continuous_terms]
-    # Check for equal min/max values
 
+    # Check for equal min/max values
     if isempty(continuous_terms) ||
        isempty(continuous_values) ||
        continuous_values[1] == Float64 && continuous_values[1] == continuous_values[2]
         # if no continuous variable, use the scatter-color for plotting
-        line_styles = Dict()
+        line_attributes = Dict()
 
     else
-        active_terms = filter(cont -> cont_active[cont], continuous_terms)
-        line_styles = Dict(
-            cont => (:colormap => (val, style)) for (style, val, cont) in
-            zip(continuous_styles, continuous_values, active_terms)
+        # Filter only active continuous variables
+        active_variables = filter(var -> cont_active[var], continuous_terms)
+
+        # Map each variable to its color range and colormap
+        line_attributes = Dict(
+            variable => (
+                    :colormap => (value_range, colormap),
+                    :linestyle => lpalette
+                )
+                for (variable, value_range, colormap, linestyle) in
+                    zip(active_variables, continuous_values, colormaps, lpalette)
         )
+        @debug line_attributes
 
     end
-    return scatter_styles, line_styles
+    return scatter_styles, line_attributes
 end
 
 

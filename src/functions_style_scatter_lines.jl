@@ -1,5 +1,5 @@
 """
-    define_style_scatter_lines!(plots, data, dict_grid, scatter_styles, line_styles, continuous_vars)
+    define_style_scatter_lines!(plots, data, dict_grid, scatter_styles, line_attributes, continuous_vars)
 Define styling of lines and points (scatter).
 
 Actions:\\
@@ -12,7 +12,7 @@ Arguments:\\
 - `data::DataFrame` - a DataFrame with predicted values to be subsetted.\\
 - `dict_grid::Dict{Any, Any}` - dictionary with one of the possible combination of selected categorical terms.\\
 - `scatter_styles::Dict{Any, Any}` - define colors of scatter.\\
-- `line_styles:: Dict{Symbol, Pair{Symbol, Tuple{Tuple{String, String}, Symbol}}}` - define line styles: colormap, color range, color.\\
+- `line_attributes:: Dict{Symbol, Pair{Symbol, Tuple{Tuple{String, String}, Symbol}}}` - define line styles: colormap, color range, color.\\
 - `continuous_vars::Vector{Symbol}` - continuous terms.
 
 **Return Value:** `Makie.GridLayoutSpec`.
@@ -22,7 +22,7 @@ function define_style_scatter_lines!(
     data,
     dict_grid,
     scatter_styles,
-    line_styles,
+    line_attributes,
     continuous_vars,
 )
     selector = [(name => x -> x .== var) for (name, var) in dict_grid]
@@ -42,10 +42,8 @@ function define_style_scatter_lines!(
     ]
 
     # define style for lines and scatter
-    if isempty(line_styles)
-        line_cmap = []
-        line_crange = []
-
+    line_cmap, line_crange, line_style = [], [], []
+    if isempty(line_attributes)
         args = convert(Vector{Pair{Symbol,Any}}, args)
         if isempty(args) || !any(x -> x[1] == :color, args)
             push!(args, :color => RGBA(0.0f0, 0.0f0, 0.0f0, 1.0f0)) # set scatter color to default black 
@@ -53,8 +51,16 @@ function define_style_scatter_lines!(
         line_color = [:color => Dict(args)[:color]]
 
     else # if contionus terms are present
-        line_cmap = [kw => cmap for (_, (kw, (_, cmap))) in line_styles]
-        line_crange = [:colorrange => lims for (_, (_, (lims, _))) in line_styles]
+        for props in values(line_attributes)
+            for p in props
+                if p[2] isa Tuple
+                    push!(line_cmap, :colormap => p[2][2])
+                    push!(line_crange, :colorrange => p[2][1])
+                else
+                    push!(line_style, :linestyle => p[2])
+                end
+            end
+        end
         line_color = [:color => sub[!, name] for name in continuous_vars]
     end
 

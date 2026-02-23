@@ -9,7 +9,7 @@ Arguments:\\
 
 **Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
 """
-function explore(model::UnfoldModel; positions = nothing, size = (700, 600))
+function explore(model::UnfoldModel; positions = nothing, size = (700, 600), return_state = false)
     Bonito.set_cleanup_time!(1) # wait one hour before closing session
     # Initialize the App from Bonito. App allows to wrap all interactive elements and to deploy them
     myapp = App() do
