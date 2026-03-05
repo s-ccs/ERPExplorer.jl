@@ -40,6 +40,7 @@ const DEFAULT_LIVE_ACTIONS_FILE = joinpath(@__DIR__, "livebench_actions_default.
 const ALL_LIVE_ACTIONS_FILE = joinpath(@__DIR__, "livebench_actions_all.txt")
 const BENCH_LIVE_ACTIONS_FILE = get(CLI_OPTS, "bench-live-actions", DEFAULT_LIVE_ACTIONS_FILE)
 const BENCH_LIVE_REPORT = get(CLI_OPTS, "bench-live-report", "")
+const DEFAULT_REPORTS_DIR = joinpath(@__DIR__, "reports")
 
 # Use a persistent environment next to this script
 const ENV_DIR = joinpath(@__DIR__, ".erp_env")
@@ -158,12 +159,15 @@ function write_bench_csv(path, rows)
     end
 end
 
+function default_bench_report_path()
+    timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
+    return joinpath(DEFAULT_REPORTS_DIR, "bench_report_$(timestamp).csv")
+end
+
 function default_livebench_report_path(actions_path::AbstractString)
     timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
-    actions_abs = abspath(actions_path)
-    actions_dir = dirname(actions_abs)
-    actions_stem = splitext(basename(actions_abs))[1]
-    return joinpath(actions_dir, "$(actions_stem)_report_$(timestamp).csv")
+    actions_stem = splitext(basename(actions_path))[1]
+    return joinpath(DEFAULT_REPORTS_DIR, "$(actions_stem)_report_$(timestamp).csv")
 end
 
 function read_livebench_action_names(path::AbstractString)
@@ -810,12 +814,13 @@ function build_live_bench_app(model; positions = nothing, size = (700, 600), fit
 end
 
 if BENCH_MODE
+    bench_out_path = isempty(BENCH_OUT) ? default_bench_report_path() : BENCH_OUT
     run_action_bench(
         model;
         repeats = BENCH_REPEATS,
         warmup = BENCH_WARMUP,
         channel = BENCH_CHANNEL,
-        out_csv = BENCH_OUT,
+        out_csv = bench_out_path,
     )
 else
     # --- build the full explorer (ERPExplorer already returns a Bonito.App) ---
