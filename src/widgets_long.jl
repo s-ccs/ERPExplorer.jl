@@ -90,8 +90,7 @@ function topoplot_widget(positions, channel_chosen; size = ())
     marker_list.val[1] = 1
 
     topo_widget = eeg_topoplot(
-        marker_list,
-        nothing;
+        marker_list;
         positions = positions,
         colorrange = colorrange,
         colormap = colormap,

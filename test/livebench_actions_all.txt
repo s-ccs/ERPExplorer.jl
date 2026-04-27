@@ -1,0 +1,34 @@
+# All currently supported auto-live actions.
+# Use these names in --bench-live-actions=<path>
+
+toggle_luminance_on
+toggle_luminance_off
+toggle_fruit_on
+toggle_fruit_off
+toggle_animal_on
+toggle_animal_off
+
+map_color_fruit
+map_color_animal
+color_none
+
+map_marker_fruit
+map_marker_animal
+marker_none
+
+map_linestyle_fruit
+map_linestyle_animal
+linestyle_none
+
+facet_col_fruit
+facet_col_animal
+facet_col_none
+
+facet_row_fruit
+facet_row_animal
+facet_row_none
+
+channel_1
+channel_2
+
+reset_view

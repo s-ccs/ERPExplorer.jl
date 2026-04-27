@@ -42,10 +42,11 @@ function formular_widgets(variables)
     formula_toggle =
         lift(widget_values..., checkbox_values...; ignore_equal_values = true) do args...
             result = []
-            for i = 1:length(args[1:end/2])
-                c = args[i+length(args)/2]
+            n_widgets = Int(length(args) ÷ 2)
+            for i = 1:n_widgets
+                c = args[i+n_widgets]
                 w = args[i]
-                push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
+                push!(result, widgets[i][1] => (c, w))
             end
             return result
         end

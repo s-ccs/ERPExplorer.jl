@@ -1,0 +1,12 @@
+[deps]
+AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
+Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+ERPExplorer = "a0936657-5da6-42c1-a2f2-44cfa89f194c"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+TopoPlots = "2bdbdf9c-dbd8-403f-947b-1a4e0dd41a7a"
+Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
+UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
+WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"

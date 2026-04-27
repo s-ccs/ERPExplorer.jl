@@ -1,0 +1,21 @@
+# One action per line. Lines starting with # are ignored.
+# This is the default auto-live benchmark sequence.
+
+toggle_luminance_on
+toggle_fruit_on
+toggle_animal_on
+map_color_fruit
+map_marker_animal
+map_linestyle_animal
+facet_col_animal
+facet_row_animal
+channel_2
+channel_1
+color_none
+marker_none
+linestyle_none
+facet_col_none
+facet_row_none
+toggle_luminance_off
+toggle_fruit_off
+toggle_animal_off
