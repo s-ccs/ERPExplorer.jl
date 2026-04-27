@@ -700,8 +700,10 @@ function build_live_bench_app(model; positions = nothing, size = (700, 600), fit
                 end
                 if pending_start_ns[] > 0
                     total_ms = (time_ns() - pending_start_ns[]) / 1e6
-                    effects_value = isnothing(pending_effects_ms[]) ? NaN : pending_effects_ms[]
-                    effects_text = isnan(effects_value) ? "n/a" : @sprintf("%.2f", effects_value)
+                    effects_value =
+                        isnothing(pending_effects_ms[]) ? NaN : pending_effects_ms[]
+                    effects_text =
+                        isnan(effects_value) ? "n/a" : @sprintf("%.2f", effects_value)
                     println(
                         "livebench #",
                         pending_seq[],
