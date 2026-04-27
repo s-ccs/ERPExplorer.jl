@@ -9,3 +9,22 @@ end
 @testset "basic test" begin
     ERPExplorer.explore(model; positions = positions)
 end
+
+@testset "axis_options" begin
+    ERPExplorer.explore(model; positions = positions,
+        axis_options = Dict(
+            :x_unit => :ms,
+            :xlabel => "Time pupupu",
+            :ylabel => "Amplitude pupupu",
+           # :xlimits => (0, 400),
+            #:ylimits => (-5, 5),
+            :xticks => -200:200:800,
+            #:yticks => -5:2.5:5,
+            :xtickformat => nothing,
+            :ytickformat => nothing,
+            :xscale => nothing,
+            :yscale => nothing,
+        ),
+    )
+end
+#gui = ERPExplorer.explore(model; positions = positions)
