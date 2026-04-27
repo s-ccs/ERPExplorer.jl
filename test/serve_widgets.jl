@@ -426,8 +426,13 @@ function build_live_bench_app(model; positions = nothing, size = (700, 600), fit
             end
             pos_keys = collect(keys(pos_sets))
             topo_select = Dropdown(pos_keys; index = 1)
-            topo_widget_obs =
-                Observable{Any}(ERPExplorer.topoplot_widget(pos_sets[pos_keys[1]], channel_chosen; size = topo_size))
+            topo_widget_obs = Observable{Any}(
+                ERPExplorer.topoplot_widget(
+                    pos_sets[pos_keys[1]],
+                    channel_chosen;
+                    size = topo_size,
+                ),
+            )
             on(topo_select.value) do key
                 channel_chosen[] = 1
                 topo_widget_obs[] =
