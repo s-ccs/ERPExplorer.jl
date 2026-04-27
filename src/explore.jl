@@ -160,7 +160,6 @@ function explore(
         on(reset_button.value) do _
             reset_all_axes!()
         end
-        
 
         # Create header, sidebar, topo and content (figure) panels
         header_dom = Grid(
