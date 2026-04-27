@@ -127,8 +127,8 @@ function explore(
                 _tmp = update_grid(
                     ERP_data,
                     formula_values,
-                    var_names[var_types.==:CategoricalTerm],
-                    var_names[var_types.==:ContinuousTerm],
+                    var_names[var_types .== :CategoricalTerm],
+                    var_names[var_types .== :ContinuousTerm],
                     mapping,
                     axis_options = axis_options,
                 )
