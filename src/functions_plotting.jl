@@ -99,7 +99,8 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
     cat_color = get(cat_active, mapping_state[:color], false) ? mapping_state[:color] : nothing
     cat_marker = get(cat_active, mapping_state[:marker], false) ? mapping_state[:marker] : nothing
     cat_linestyle =
-        get(cat_active, mapping_state[:linestyle], false) ? mapping_state[:linestyle] : nothing
+        get(cat_active, mapping_state[:linestyle], false) ? mapping_state[:linestyle] :
+        nothing
 
     # Resolve facet terms (row/col), but only keep them when selected and active.
     row_term =
