@@ -3,12 +3,13 @@
 Run the dashboard for explorative ERP analysis.
 
 Arguments:\\
-- `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and continuous terms.\\
+- `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and/or continuous terms.\\
 - `positions::Vector{Point{2, Float32}}` - x an y coordinates of the channels on topoplot.\\
 - `size::Tuple{Float64, Float64}` - size of the topoplot panel.\\
-- `axis_options` - optional axis configuration passed to `update_grid` (e.g. `:x_unit`, labels, limits, ticks).\\
-- `auto_reset_view::Bool` - if `true`, recenter axes after each data/mapping update (default `true`).\\
-- `fit_window::Bool` - if `true`, fit dashboard width/height to browser viewport (default `true`).\\
+- `axis_options = nothing` - optional axis configurations \\
+    Passed to `update_grid` (e.g. `:x_unit`, labels, limits, ticks).\\
+- `auto_reset_view::Bool = true` - recenter axes after each data/mapping update.\\
+- `fit_window::Bool = true` - fit dashboard width/height to browser viewport.\\
 
 **Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
 """
