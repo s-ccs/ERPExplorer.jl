@@ -804,12 +804,7 @@ function build_live_bench_app(model; positions = nothing, size = (700, 600), fit
                 "margin" => "20px",
                 "position" => :relative,
             )
-        return DOM.div(
-            css,
-            Bonito.TailwindCSS,
-            cards;
-            style = container_style,
-        )
+        return DOM.div(css, Bonito.TailwindCSS, cards; style = container_style)
     end
 end
 
