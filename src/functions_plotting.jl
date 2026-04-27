@@ -223,11 +223,10 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
             )
     end
     if cat_linestyle !== nothing
-        scales_kwargs[:LineStyle] =
-            (;
-                palette = [:solid, :dot, :dash],
-                categories = categorical_levels(cat_linestyle),
-            )
+        scales_kwargs[:LineStyle] = (;
+            palette = [:solid, :dot, :dash],
+            categories = categorical_levels(cat_linestyle),
+        )
     end
     if row_term != :none
         scales_kwargs[:Row] = (; categories = categorical_levels(row_term))
