@@ -6,10 +6,20 @@ Arguments:\\
 - `model::UnfoldLinearModel{Float64}` - Unfold linear model with categorical and/or continuous terms.\\
 - `positions::Vector{Point{2, Float32}}` - x an y coordinates of the channels on topoplot.\\
 - `size::Tuple{Float64, Float64}` - size of the topoplot panel.\\
-- `axis_options = nothing` - optional axis configurations \\
-    Passed to `update_grid` (e.g. `:x_unit`, labels, limits, ticks).\\
 - `auto_reset_view::Bool = true` - recenter axes after each data/mapping update.\\
 - `fit_window::Bool = true` - fit dashboard width/height to browser viewport.\\
+- `axis_options = nothing` - optional axis configurations \\
+    Passed to `update_grid` (e.g. `:x_unit`, labels, limits, ticks).\\
+
+  Supported `axis_options` keys with default values:
+- `:x_unit` = `:ms` - x-axis unit. Supported values: `:s`, `:ms`. Example: ticks like "0.4" vs "400".
+- `:xlabel` = `nothing` - x-axis label, inferred from `:x_unit`.
+- `:ylabel` = `"Amplitude (uV)"` - y-axis label.
+- `:xlimits`, `:ylimits` = `nothing` - axis limits.
+- `:xticks`, `:yticks` = `nothing` - axis tick positions.
+- `:xtickformat`, `:ytickformat` = `nothing` - axis tick label formatters.
+- `:xscale`, `:yscale` = `nothing` - axis scaling options.
+
 
 **Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
 """

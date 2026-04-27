@@ -23,5 +23,6 @@ include("functions_formular.jl")
 include("functions_plotting.jl")
 include("widgets_short.jl")
 include("widgets_long.jl")
+include("gen_data.jl")
 
 end
