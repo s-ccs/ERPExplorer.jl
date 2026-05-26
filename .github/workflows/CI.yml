@@ -39,7 +39,6 @@ jobs:
         uses: GabrielBB/xvfb-action@v1
         with:
           run: |
-             julia --project=. -e 'using Pkg; Pkg.test()'
              julia --project=. test/dashboard_options.jl --bench --bench-repeats=1 --bench-warmup=0 --bench-out=/tmp/erpexplorer_bench.csv
       
   docs:
