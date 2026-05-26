@@ -1,5 +1,6 @@
 # One action per line. Lines starting with # are ignored.
-# This is the default auto-live benchmark sequence.
+# This is the default `bench-live-auto` sequence.
+# Action names are validated against `test/lib/actions/registry.jl`.
 
 toggle_luminance_on
 toggle_fruit_on

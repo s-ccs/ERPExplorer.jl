@@ -38,7 +38,7 @@ function mapping_dropdowns(varnames, var_types)
         Row(DOM.div("color:"), c_dropdown, align_items = "center", justify_items = "end"),
         Row(DOM.div("marker:"), m_dropdown, align_items = "center", justify_items = "end"),
         Row(
-            DOM.div("linestyle:"), #bug
+            DOM.div("linestyle:"),
             l_dropdown,
             align_items = "center",
             justify_items = "end",
@@ -81,12 +81,13 @@ Actions:\\
 - `channel_chosen::Observable{Int64}` - number of the selected channel.\\
 """
 function topoplot_widget(positions, channel_chosen; size = ())
-    strokecolor = Observable(repeat([:red], length(to_value(positions)))) # crashing
-    #channel_chosen = Observable(1)
     colorrange = vcat(0, 1)
     colormap = vcat(Gray(0.5), Gray(1))
 
-    marker_list = Observable(zeros(length(to_value(positions))))
+    n_positions = length(to_value(positions))
+    n_positions > 0 || throw(ArgumentError("positions must contain at least one channel"))
+
+    marker_list = Observable(zeros(n_positions))
     marker_list.val[1] = 1
 
     topo_widget = eeg_topoplot(

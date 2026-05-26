@@ -1,51 +1,24 @@
-begin
-    using Pkg
-    Pkg.activate(".")
-    Pkg.status()
-    using Revise
-    using ERPExplorer
+#!/usr/bin/env julia
 
-    include("../test/setup.jl")
-    ENV["JULIA_DEBUG"] = "ERPExplorer"
-end
+import Pkg
 
-Pkg.activate("scripts")
-include("gen_data.jl")
-#formulaS = @formula(0 ~ 1 +luminance + contrast + saccade_amplitude + string + animal + fruit + color)
-formulaS = @formula(0 ~ 1 + animal + fruit)
+const ROOT = normpath(joinpath(@__DIR__, ".."))
+
+Pkg.activate(@__DIR__)
+Pkg.develop(path = ROOT)
+
+using ERPExplorer
+using TopoPlots
+using Unfold
+using WGLMakie
+
+include(joinpath(ROOT, "test", "lib", "synthetic_data.jl"))
+
+dataS, evts, _positions = build_synthetic_erp_data()
 formulaS = @formula(0 ~ 1 + luminance + fruit + animal)
-dataS, evts, pos2d = gen_data()
-times = range(0, length = size(dataS, 2), step = 1 ./ 100)
+times = range(0, length = size(dataS, 2), step = 1 / 100)
 model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
 _, positions = TopoPlots.example_data()
-explore(model; positions = positions)
-
-#format_file("scripts/gen_data.jl")
-begin
-    using Pkg
-    Pkg.activate(".")
-    Pkg.status()
-end
-
-include("/store/users/mikheev/projects/erpexplorer_dev/dev/ERPExplorer/docs/make.jl")
-
-using JuliaFormatter
-begin
-    test_entries = readdir("./test")
-    cd("./test")
-    for i in test_entries
-        format_file(i)
-    end
-    src_entries = readdir("../src")
-    cd("../src")
-    for i in src_entries
-        format_file(i)
-    end
-    docs_entries = readdir("../docs")
-    cd("../docs")
-    for i in docs_entries
-        format_file(i)
-    end
-    cd("../")
-end
+WGLMakie.activate!()
+display(ERPExplorer.explore(model; positions = positions))

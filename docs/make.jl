@@ -8,7 +8,6 @@ using CairoMakie
 const Makie = CairoMakie # - for references
 using Unfold
 using DataFrames
-using DataFramesMeta
 using Literate
 using Glob
 
@@ -29,7 +28,7 @@ makedocs(;
     warnonly = :cross_references,
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://s-css.github.io/ERPExplorer.jl",
+        canonical = "https://s-ccs.github.io/ERPExplorer.jl",
         assets = String[],
     ),
     pages = [

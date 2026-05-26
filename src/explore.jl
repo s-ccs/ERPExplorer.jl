@@ -21,7 +21,7 @@ Arguments:\\
 - `:xscale`, `:yscale` = `nothing` - axis scaling options.
 
 
-**Return Value:** `Hyperscript.Node{Hyperscript.HTMLSVG}` - final HTML code of the dashboard.
+**Return Value:** `Bonito.App` - interactive dashboard app.
 """
 function explore(
     model::UnfoldModel;
@@ -31,7 +31,7 @@ function explore(
     auto_reset_view = true,
     fit_window = true,
 )
-    Bonito.set_cleanup_time!(1) # wait one hour before closing session
+    Bonito.set_cleanup_time!(1)
     # Initialize the App from Bonito. App allows to wrap all interactive elements and to deploy them
     myapp = App() do
         # Extract formula terms and their features from the model.
@@ -64,6 +64,8 @@ function explore(
                 pos_sets[string(k)] = v
             end
             pos_keys = collect(keys(pos_sets))
+            isempty(pos_keys) &&
+                throw(ArgumentError("positions must contain at least one position set"))
             topo_select = Dropdown(pos_keys; index = 1)
             topo_widget_obs = Observable{Any}(
                 topoplot_widget(pos_sets[pos_keys[1]], channel_chosen; size = topo_size),
@@ -132,14 +134,14 @@ function explore(
 
         # Update the the grid layout
         render_count = Ref(0)
-        Makie.onany_latest(ERP_data, mapping; update = true) do ERP_data, mapping # `update = true` means that it will run once immediately
+        Makie.onany_latest(ERP_data, mapping; update = true) do erp_state, mapping # `update = true` means that it will run once immediately
             lock(lk) do
                 t0 = time_ns()
                 _tmp = update_grid(
-                    ERP_data,
+                    erp_state,
                     formula_values,
                     var_names[var_types .== :CategoricalTerm],
-                    var_names[var_types .== :ContinuousTerm],
+                    var_names[is_continuous_like.(var_types)],
                     mapping,
                     axis_options = axis_options,
                 )

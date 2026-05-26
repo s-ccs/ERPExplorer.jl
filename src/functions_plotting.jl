@@ -9,6 +9,7 @@ Arguments:\\
 - `categorical_vars::Vector{Symbol}` - categorical terms.\\
 - `continuous_terms::Vector{Symbol}` - continuous terms.\\
 - `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.\\
+- `active_terms` - optional set/dict of formula terms active in the current effects call.\\
 - `axis_options` - optional axis configuration. Supported keys are `:x_unit` (`:ms`/`:s`),
   `:xlabel`, `:ylabel`, `:xlimits`, `:ylimits`, `:xticks`, `:yticks`,
   `:xtickformat`, `:ytickformat`, `:xscale`, `:yscale`.\\
@@ -18,7 +19,17 @@ Action:\\
 
 **Return Value:** `Makie.GridLayoutSpec`.
 """
-function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_obs; axis_options = nothing)
+function update_grid(
+    data,
+    formula_values,
+    cat_terms,
+    continuous_terms,
+    mapping_obs;
+    axis_options = nothing,
+    active_terms = nothing,
+)
+    data, active_terms = unpack_erp_payload(data, active_terms)
+
     # `mapping_obs` can be either an Observable or a plain Dict.
     # `to_value` normalizes this so all later logic works on concrete values.
     mapping_state = to_value(mapping_obs)
@@ -30,16 +41,11 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
         return S.GridLayout([(1, 1) => S.GridLayout([(1, 1) => empty_axis])])
     end
 
-    # Determine which terms are currently "active" in the filtered ERP data.
-    # A term is active iff at least one row differs from the synthetic fallback value
-    # `"typical_value"` that we assign for disabled terms.
-    #
-    # Important: we check the *full column* (not only row 1), because reactive updates can
-    # transiently reorder/replace rows during rerender and row 1 can momentarily misrepresent
-    # the actual current state.
-    cat_active = Dict(cat => any(data[!, cat] .!= "typical_value") for cat in cat_terms)
+    data_cols = Set(Symbol.(names(data)))
+    active_set = active_term_set(active_terms, data_cols, vcat(cat_terms, continuous_terms))
+    cat_active = Dict(cat => cat in active_set && cat in data_cols for cat in cat_terms)
     cont_active =
-        Dict(cont => any(data[!, cont] .!= "typical_value") for cont in continuous_terms)
+        Dict(cont => cont in active_set && cont in data_cols for cont in continuous_terms)
 
     # Work on a local copy so we can add transformed plotting columns (`time_axis`) and
     # apply plotting-only tweaks without mutating upstream data.
@@ -130,7 +136,7 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
         if !get(cat_active, term, false)
             return observed_levels
         end
-        configured_levels = sort!(collect(formula_lookup[term]))
+        configured_levels = sort_values(formula_lookup[term])
         observed_set = Set(observed_levels)
         configured_observed = [lvl for lvl in configured_levels if lvl in observed_set]
         extra_levels = [lvl for lvl in observed_levels if !(lvl in configured_levels)]
@@ -224,7 +230,11 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
     end
     if cat_linestyle !== nothing
         scales_kwargs[:LineStyle] = (;
-            palette = [:solid, :dot, :dash],
+            palette = [
+                :solid,
+                Makie.Linestyle(Float32[0, 1, 2]),
+                Makie.Linestyle(Float32[0, 3, 6]),
+            ],
             categories = categorical_levels(cat_linestyle),
         )
     end
@@ -241,7 +251,7 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
         cont_term = first(active_cont)
         scale_key = cat_color !== nothing ? :color2 : :Color
         scales_kwargs[scale_key] =
-            (; colormap = :viridis, colorrange = extrema(data[!, cont_term]))
+            (; colormap = :viridis, colorrange = extrema(plot_data[!, cont_term]))
     end
 
     # Translate validated axis config into kwargs consumed by AoG draw.
@@ -271,4 +281,24 @@ function update_grid(data, formula_values, cat_terms, continuous_terms, mapping_
 
     # Wrap generated content in a stable one-cell root layout expected by caller.
     return S.GridLayout([(1, 1) => spec_layout])
+end
+
+function unpack_erp_payload(data, active_terms)
+    if data isa NamedTuple && haskey(data, :data)
+        payload_active_terms = haskey(data, :active_terms) ? data.active_terms : nothing
+        return data.data, isnothing(active_terms) ? payload_active_terms : active_terms
+    end
+    return data, active_terms
+end
+
+function active_term_set(active_terms, data_cols::Set{Symbol}, all_terms)
+    if isnothing(active_terms)
+        return Set(term for term in all_terms if term in data_cols)
+    elseif active_terms isa AbstractDict
+        return Set(Symbol(term) for (term, enabled) in active_terms if enabled)
+    elseif active_terms isa AbstractSet
+        return Set(Symbol(term) for term in active_terms)
+    else
+        return Set(Symbol(term) for term in active_terms)
+    end
 end
