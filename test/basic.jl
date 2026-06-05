@@ -49,6 +49,20 @@ end
     @test ERPExplorer.scaled_plot_linewidth((1400, 1200); facet_count = 4) == 1.5
 end
 
+@testset "continuous colorbar ticks" begin
+    @test ERPExplorer.format_sigdigits_down(123.456) == "123"
+    @test ERPExplorer.format_sigdigits_down(12.345) == "12.3"
+    @test ERPExplorer.format_sigdigits_down(0.012345) == "0.0123"
+    @test ERPExplorer.format_sigdigits_down(-12.345) == "-12.4"
+
+    tick_positions, tick_labels = ERPExplorer.continuous_colorbar_ticks((0.12345, 99.987))
+    @test length(tick_positions) == 5
+    @test tick_positions[1] == 0.12345
+    @test tick_positions[3] ≈ (0.12345 + 99.987) / 2
+    @test tick_positions[end] == 99.987
+    @test tick_labels == ["0.123", "25", "50", "75", "99.9"]
+end
+
 @testset "update_grid accepts plot_size" begin
     variables = ERPExplorer.extract_variables(model)
     formula_values = [k => ERPExplorer.value_range(v) for (k, v) in variables]

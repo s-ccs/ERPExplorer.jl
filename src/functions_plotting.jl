@@ -10,7 +10,7 @@ Arguments:\\
 - `continuous_terms::Vector{Symbol}` - continuous terms.\\
 - `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.\\
 - `active_terms` - optional set/dict of formula terms active in the current effects call.\\
-- `plot_size` - optional main plot size used to scale scatter markers.\\
+- `plot_size` - optional main plot size used to scale scatter markers and line widths.\\
 - `axis_options` - optional axis configuration. Supported keys are `:x_unit` (`:ms`/`:s`),
   `:xlabel`, `:ylabel`, `:xlimits`, `:ylimits`, `:xticks`, `:yticks`,
   `:xtickformat`, `:ytickformat`, `:xscale`, `:yscale`.\\
@@ -56,6 +56,90 @@ function scaled_plot_linewidth(
     scale = plot_area_scale(plot_size; base_size = base_size, facet_count = facet_count)
     return clamp(base_linewidth * scale, min_linewidth, max_linewidth)
 end
+
+function floor_sigdigits(x; digits = 3)
+    digits > 0 || throw(ArgumentError("digits must be positive"))
+    value = Float64(x)
+    isfinite(value) || return value
+    value == 0 && return 0.0
+
+    magnitude = floor(Int, log10(abs(value)))
+    scale = 10.0^(digits - 1 - magnitude)
+    return floor(value * scale) / scale
+end
+
+function format_sigdigits_down(x; digits = 3)
+    value = floor_sigdigits(x; digits = digits)
+    isfinite(value) || return string(value)
+    value == 0 && return "0"
+
+    decimals = max(0, digits - 1 - floor(Int, log10(abs(value))))
+    label = fixed_decimal_string(value, decimals)
+    if occursin(".", label)
+        label = replace(label, r"0+$" => "")
+        label = replace(label, r"\.$" => "")
+    end
+    return label
+end
+
+function fixed_decimal_string(value, decimals::Integer)
+    decimals >= 0 || throw(ArgumentError("decimals must be non-negative"))
+    if decimals == 0
+        return string(round(Int, value))
+    end
+
+    scale = 10^decimals
+    scaled = round(Int, abs(value) * scale)
+    int_part, frac_part = divrem(scaled, scale)
+    sign = signbit(value) ? "-" : ""
+    return sign * string(int_part) * "." * lpad(string(frac_part), decimals, '0')
+end
+
+function nonsingular_colorbar_range(colorrange)
+    lo, hi = colorrange
+    if lo == hi
+        if lo == 0
+            return (lo, oneunit(lo))
+        elseif lo < 0
+            return (lo, false * lo)
+        else
+            return (false * lo, lo)
+        end
+    end
+    return (lo, hi)
+end
+
+function continuous_colorbar_ticks(colorrange; tick_count = 5, digits = 3)
+    tick_count >= 2 || throw(ArgumentError("tick_count must be at least 2"))
+    lo, hi = nonsingular_colorbar_range(colorrange)
+    tick_positions = collect(range(lo, hi; length = tick_count))
+    return (
+        tick_positions,
+        [format_sigdigits_down(position; digits = digits) for position in tick_positions],
+    )
+end
+
+function apply_continuous_colorbar_ticks!(spec_layout, colorrange)
+    ticks = continuous_colorbar_ticks(colorrange)
+    set_continuous_colorbar_ticks!(spec_layout, ticks)
+    return spec_layout
+end
+
+function set_continuous_colorbar_ticks!(spec_layout::Makie.GridLayoutSpec, ticks::Tuple)
+    for (_position, child) in spec_layout.content
+        set_continuous_colorbar_ticks!(child, ticks)
+    end
+    return spec_layout
+end
+
+function set_continuous_colorbar_ticks!(spec::Makie.BlockSpec, ticks::Tuple)
+    if spec.type == :Colorbar
+        spec.kwargs[:ticks] = ticks
+    end
+    return spec
+end
+
+set_continuous_colorbar_ticks!(spec, ticks::Tuple) = spec
 
 function update_grid(
     data,
@@ -213,6 +297,7 @@ function update_grid(
     # categorical and continuous color encodings can coexist without colliding.
     active_cont = filter(cont -> get(cont_active, cont, false), continuous_terms)
     has_cont = !isempty(active_cont)
+    continuous_colorrange = nothing
     if has_cont
         cont_term = first(active_cont)
         if cat_color !== nothing
@@ -308,8 +393,9 @@ function update_grid(
     if has_cont
         cont_term = first(active_cont)
         scale_key = cat_color !== nothing ? :color2 : :Color
+        continuous_colorrange = extrema(plot_data[!, cont_term])
         scales_kwargs[scale_key] =
-            (; colormap = :viridis, colorrange = extrema(plot_data[!, cont_term]))
+            (; colormap = :viridis, colorrange = continuous_colorrange)
     end
 
     # Translate validated axis config into kwargs consumed by AoG draw.
@@ -336,6 +422,9 @@ function update_grid(
         ),
         axis = (; pairs(axis_kwargs)...),
     )
+    if continuous_colorrange !== nothing
+        apply_continuous_colorbar_ticks!(spec_layout, continuous_colorrange)
+    end
 
     # Wrap generated content in a stable one-cell root layout expected by caller.
     return S.GridLayout([(1, 1) => spec_layout])
