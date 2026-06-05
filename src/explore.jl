@@ -144,6 +144,7 @@ function explore(
                     var_names[is_continuous_like.(var_types)],
                     mapping,
                     axis_options = axis_options,
+                    plot_size = size,
                 )
                 try
                     plot_layout[] = _tmp

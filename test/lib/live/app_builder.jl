@@ -137,8 +137,14 @@ function build_live_benchmark_app(
         Makie.onany_latest(ERP_data, mapping; update = true) do erp_state, mapping_value
             lock(render_lock) do
                 t0 = time_ns()
-                spec =
-                    ERPExplorer.update_grid(erp_state, formula_values, cat_terms, cont_terms, mapping_value)
+                spec = ERPExplorer.update_grid(
+                    erp_state,
+                    formula_values,
+                    cat_terms,
+                    cont_terms,
+                    mapping_value;
+                    plot_size = size,
+                )
                 try
                     plot_layout[] = spec
                 catch err

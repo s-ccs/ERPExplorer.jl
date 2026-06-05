@@ -10,6 +10,7 @@ Arguments:\\
 - `continuous_terms::Vector{Symbol}` - continuous terms.\\
 - `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.\\
 - `active_terms` - optional set/dict of formula terms active in the current effects call.\\
+- `plot_size` - optional main plot size used to scale scatter markers.\\
 - `axis_options` - optional axis configuration. Supported keys are `:x_unit` (`:ms`/`:s`),
   `:xlabel`, `:ylabel`, `:xlimits`, `:ylimits`, `:xticks`, `:yticks`,
   `:xtickformat`, `:ytickformat`, `:xscale`, `:yscale`.\\
@@ -19,6 +20,43 @@ Action:\\
 
 **Return Value:** `Makie.GridLayoutSpec`.
 """
+function plot_area_scale(plot_size; base_size = (700, 600), facet_count = 1)
+    length(plot_size) == 2 || throw(ArgumentError("plot_size must have width and height"))
+    width, height = Float64(plot_size[1]), Float64(plot_size[2])
+    base_width, base_height = Float64(base_size[1]), Float64(base_size[2])
+    width > 0 && height > 0 || throw(ArgumentError("plot_size values must be positive"))
+    base_width > 0 && base_height > 0 ||
+        throw(ArgumentError("base_size values must be positive"))
+    facet_count > 0 || throw(ArgumentError("facet_count must be positive"))
+
+    effective_area = (width * height) / facet_count
+    return sqrt(effective_area / (base_width * base_height))
+end
+
+function scaled_plot_markersize(
+    plot_size;
+    base_size = (700, 600),
+    base_markersize = 10.0,
+    min_markersize = 4.0,
+    max_markersize = 24.0,
+    facet_count = 1,
+)
+    scale = plot_area_scale(plot_size; base_size = base_size, facet_count = facet_count)
+    return clamp(base_markersize * scale, min_markersize, max_markersize)
+end
+
+function scaled_plot_linewidth(
+    plot_size;
+    base_size = (700, 600),
+    base_linewidth = 1.5,
+    min_linewidth = 0.75,
+    max_linewidth = 4.0,
+    facet_count = 1,
+)
+    scale = plot_area_scale(plot_size; base_size = base_size, facet_count = facet_count)
+    return clamp(base_linewidth * scale, min_linewidth, max_linewidth)
+end
+
 function update_grid(
     data,
     formula_values,
@@ -27,6 +65,7 @@ function update_grid(
     mapping_obs;
     axis_options = nothing,
     active_terms = nothing,
+    plot_size = nothing,
 )
     data, active_terms = unpack_erp_payload(data, active_terms)
 
@@ -204,13 +243,32 @@ function update_grid(
     if cat_linestyle === nothing
         push!(line_visual_kwargs, :linestyle => :solid)
     end
+    n_rows = row_term == :none ? 1 : length(categorical_levels(row_term))
+    n_cols = col_term == :none ? 1 : length(categorical_levels(col_term))
+    facet_count = max(1, n_rows * n_cols)
+    plot_markersize =
+        isnothing(plot_size) ? 10.0 :
+        scaled_plot_markersize(plot_size; facet_count = facet_count)
+    plot_linewidth =
+        isnothing(plot_size) ? 1.5 :
+        scaled_plot_linewidth(plot_size; facet_count = facet_count)
+    push!(line_visual_kwargs, :linewidth => plot_linewidth)
 
     # Compose layers: line + scatter over the same x/y/facet base mapping.
     # Both layers share the same grouped data and only differ in visual channels.
     scatter_layer = AlgebraOfGraphics.mapping(; pairs(scatter_aes)...) *
-                    AlgebraOfGraphics.visual(Scatter; markersize = 10, scatter_visual_kwargs...)
+                    AlgebraOfGraphics.visual(
+                        Scatter;
+                        markersize = plot_markersize,
+                        legend = (; markersize = 10.0),
+                        scatter_visual_kwargs...,
+                    )
     line_layer = AlgebraOfGraphics.mapping(; pairs(line_aes)...) *
-                 AlgebraOfGraphics.visual(Lines; line_visual_kwargs...)
+                 AlgebraOfGraphics.visual(
+                     Lines;
+                     legend = (; linewidth = 1.5),
+                     line_visual_kwargs...,
+                 )
 
     spec = base * (line_layer + scatter_layer)
 
