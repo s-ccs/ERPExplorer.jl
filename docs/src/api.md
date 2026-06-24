@@ -3,4 +3,4 @@ Modules = [ERPExplorer]
 Order   = [:function]
 ```
 
-Internally, we use a `PlotConfig` struct to keep track of common plotting options, so that all functions have a similar API.
+Plot customisation currently uses keyword arguments on the public plotting entry points, including `axis_options` for axis labels, limits, ticks, scales, and x-axis units.

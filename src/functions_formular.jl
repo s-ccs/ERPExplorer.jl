@@ -13,13 +13,15 @@ Actions:
 
 **Return Values:**\\
 - `formula_defaults::Dict{Symbol, Observable{Bool}}` - formula widgets with default values.\\
-- `formula_toggle::Observable{Vector{Any}}` - formula widgets with all values and toggle value.\\
+- `formula_toggle::Observable{Vector{Any}}` - formula widgets with toggle state,
+  current raw widget value, and term type.\\
 - `formula_DOM::Hyperscript.Node{Hyperscript.HTMLSVG}` - HTML element that can be displayed to interact with the the formula.\\
 - `formula_values::Vector{Pair{Symbol}}` - formula widgets with all values.\\
 """
 function formular_widgets(variables)
     formula_values = [k => value_range(v) for (k, v) in variables]
     widgets = [k => widget(v) for (k, v) in formula_values]
+    term_types = [v[3] for (_k, v) in variables]
     checkboxes = [Bonito.Checkbox(false) for k in formula_values]
     widget_names = [formular_text("0 ~ 1")]
 
@@ -42,10 +44,11 @@ function formular_widgets(variables)
     formula_toggle =
         lift(widget_values..., checkbox_values...; ignore_equal_values = true) do args...
             result = []
-            for i = 1:length(args[1:end/2])
-                c = args[i+length(args)/2]
+            n_widgets = Int(length(args) ÷ 2)
+            for i = 1:n_widgets
+                c = args[i+n_widgets]
                 w = args[i]
-                push!(result, widgets[i][1] => (map(identity, c), map(identity, w)))
+                push!(result, widgets[i][1] => (c, w, term_types[i]))
             end
             return result
         end
@@ -68,7 +71,8 @@ Actions:\\
 - Create `DataFrame` with columns: yhat, channel, dummy, time, eventname and unique columns for each formula term.\\
 - Make it Observable.\\
 
-**Return Value:** `yhats_signal::Observable{Any}` containing DataFrame with yhats. 
+**Return Value:** `yhats_signal::Observable{Any}` containing
+`(data = DataFrame, active_terms = Set{Symbol})`.
 """
 function get_ERP_data(model, formula_toggle, channel_chosen)
     ERP_data = Observable{Any}(nothing; ignore_equal_values = true)
@@ -76,10 +80,12 @@ function get_ERP_data(model, formula_toggle, channel_chosen)
     onany(formula_toggle, channel_chosen; update = true) do formula_toggle_on, chan
         # Initialize an empty dictionary
         yhat_dict = Dict{Symbol,Any}()
+        active_terms = Set{Symbol}()
         # Populate yhat_dict with valid entries
         for (k, v) in formula_toggle_on # k is term name, v is activation status and term values
-            if !isempty(v) && v[1]
-                yhat_dict[k] = widget_value(v[2])
+            if !isempty(v) && v[1] && !isempty(v[2])
+                push!(active_terms, k)
+                yhat_dict[k] = widget_value(v[2], v[3])
             end
         end
         # Assign a default value if yhat_dict remains empty
@@ -88,13 +94,8 @@ function get_ERP_data(model, formula_toggle, channel_chosen)
         end
         # Compute predicted value (yhat) of the given model using effects
         yhats = effects(yhat_dict, model)
-        for (k, wv) in formula_toggle_on
-            if isempty(wv[2]) || !wv[1]
-                yhats[!, k] .= "typical_value"
-            end
-        end
         filter!(x -> x.channel == chan, yhats)
-        ERP_data[] = yhats
+        ERP_data[] = (data = yhats, active_terms = active_terms)
     end
 
     return ERP_data

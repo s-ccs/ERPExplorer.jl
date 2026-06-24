@@ -4,38 +4,35 @@ authors = ["Simon Danisch, Benedikt Ehinger, Vladimir Mikheev"]
 version = "0.1.0"
 
 [deps]
-BSplineKit = "093aae92-e908-43d7-9660-e50ee39d5a0a"
+AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
 Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
-ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
-GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-MakieCore = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TopoPlots = "2bdbdf9c-dbd8-403f-947b-1a4e0dd41a7a"
 Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
-UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
-BSplineKit = "0.17, 0.18, 0.19"
+AlgebraOfGraphics = "0.10, 0.11, 0.12"
 Bonito = "4"
-ColorTypes = "0.12.0"
 Colors = "0.12, 0.13"
 DataFrames = "1"
-DataFramesMeta = "0.15"
 GeometryBasics = "0.4, 0.5"
-Makie = "0.21, 0.22, 0.23, 0.24"
-MakieCore = "0.9, 0.10"
-StatsBase = "0.34"
+Makie = "0.24"
 StatsModels = "0.7"
 Test = "1.11"
-TopoPlots = "0.2, 0.3"
+TopoPlots = "0.3"
 Unfold = "0.7, 0.8"
 UnfoldSim = "0.4, 0.5"
-WGLMakie = "0.10, 0.11, 0.12, 0.13"
+WGLMakie = "0.13"
+
+[extras]
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
+
+[targets]
+test = ["GeometryBasics", "Random", "Test", "UnfoldSim"]
