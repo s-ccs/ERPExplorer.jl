@@ -22,13 +22,15 @@ import Pkg
 
 const SCRIPT_DIR = @__DIR__
 const ERP_PATH = get(ENV, "ERPEXPLORER_PATH", dirname(@__DIR__))
-const ENV_DIR = joinpath(SCRIPT_DIR, ".erp_env")
+const ENV_DIR = joinpath(SCRIPT_DIR, "harness")
 
 Pkg.activate(ENV_DIR)
 Pkg.develop(path = ERP_PATH)
+Pkg.instantiate()
 
 include(joinpath(SCRIPT_DIR, "lib", "DashboardBenchHarness.jl"))
 using .DashboardBenchHarness
+using ERPExplorer
 
 const CONFIG = parse_harness_config(
     ARGS;
@@ -40,17 +42,26 @@ if CONFIG.mode == MODE_HELP
     exit(0)
 end
 
-model, positions_sets = build_benchmark_fixture(CONFIG)
+model, positions_sets = if !isempty(CONFIG.data_file)
+    load_real_data_fixture(CONFIG)
+elseif !isempty(CONFIG.data_dir) && CONFIG.mode != MODE_BENCH
+    nothing, nothing
+else
+    build_benchmark_fixture(CONFIG)
+end
 
 if CONFIG.mode == MODE_BENCH
     run_offline_benchmark(model, CONFIG)
 else
     DashboardBenchHarness.WGLMakie.activate!()
 
-    app =
-        CONFIG.mode == MODE_BENCH_LIVE_AUTO ?
-        build_live_benchmark_app(model, CONFIG; positions = positions_sets) :
+    app = if isempty(CONFIG.data_file) && !isempty(CONFIG.data_dir)
+        build_real_data_launcher_app(CONFIG)
+    elseif CONFIG.mode == MODE_BENCH_LIVE_AUTO
+        build_live_benchmark_app(model, CONFIG; positions = positions_sets)
+    else
         ERPExplorer.explore(model; positions = positions_sets)
+    end
 
     if CONFIG.mode == MODE_BENCH_LIVE_AUTO
         println(

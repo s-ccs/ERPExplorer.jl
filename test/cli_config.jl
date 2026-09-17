@@ -24,6 +24,22 @@
     default_live_cfg = parse_harness_config(["--mode=bench-live-auto"]; script_dir = script_dir)
     @test default_live_cfg.live_action_timeout_sec == DEFAULT_LIVE_ACTION_TIMEOUT_SEC
 
+    real_data_cfg = parse_harness_config(
+        [
+            "--mode=serve",
+            "--data-dir=/tmp/data",
+            "--data-file=/tmp/data/model.jld2",
+            "--model-key=model",
+            "--channel-labels-file=/tmp/channels.tsv",
+        ];
+        script_dir = script_dir,
+    )
+    @test real_data_cfg.data_dir == "/tmp/data"
+    @test real_data_cfg.data_file == "/tmp/data/model.jld2"
+    @test real_data_cfg.model_key == "model"
+    @test real_data_cfg.channel_labels_file == "/tmp/channels.tsv"
+    @test real_data_cfg.montage == "standard_1005"
+
     @test_throws ErrorException parse_harness_config(
         ["--mode=serve", "--bench"];
         script_dir = script_dir,

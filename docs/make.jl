@@ -33,6 +33,7 @@ makedocs(;
     ),
     pages = [
         "ERPExplorer highlights" => "index.md",
+        "Inputs and usage" => "usage.md",
         #"Plotting" => "generated/intro/toposeries.md",
         #"Diagnostics" => "generated/intro/gnostics.md",
         "API / DocStrings" => "api.md",

@@ -4,7 +4,7 @@
 Run the default bench scenario and write a CSV report.
 Returns collected row records.
 """
-function run_offline_benchmark(model, config::HarnessConfig)
+function run_offline_benchmark(model, config::HarnessConfig; update_plot = ERPExplorer.update_grid)
     variables = ERPExplorer.extract_variables(model)
     formula_values = [k => ERPExplorer.value_range(v) for (k, v) in variables]
     var_types = map(x -> x[2][3], variables)
@@ -44,7 +44,7 @@ function run_offline_benchmark(model, config::HarnessConfig)
         yhats = compute_effects_df()
         effects_ms = (time_ns() - t1) / 1e6
         t2 = time_ns()
-        ERPExplorer.update_grid(
+        update_plot(
             yhats,
             formula_values,
             categorical_terms,
@@ -150,5 +150,7 @@ function run_offline_benchmark(model, config::HarnessConfig)
     write_bench_csv(output_path, rows)
     println("Wrote benchmark CSV: ", output_path)
 
+    failures = [row.action_id for row in rows if !row.success]
+    isempty(failures) || error("Benchmark failed for: $(join(failures, ", ")). See $(output_path).")
     return rows
 end

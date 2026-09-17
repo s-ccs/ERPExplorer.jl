@@ -8,7 +8,11 @@ struct LiveUiBindings
     set_mapping_slot!::Function
     set_channel!::Function
     reset_view!::Function
+    set_option!::Function
 end
+LiveUiBindings(term, mapping, channel, reset) = LiveUiBindings(term, mapping, channel, reset,
+    (option, value) -> error("Option $(option) is unavailable in this binding."))
+
 
 """
     set_live_term_enabled!(bindings, term, enabled)

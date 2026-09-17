@@ -20,3 +20,11 @@ facet_row_none
 toggle_luminance_off
 toggle_fruit_off
 toggle_animal_off
+
+lines_only
+markers_only
+lines_on
+markers_on
+show_topoplots
+topoplot_bins_3
+hide_topoplots

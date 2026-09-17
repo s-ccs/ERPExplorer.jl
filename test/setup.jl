@@ -6,6 +6,7 @@ using Bonito
 using DataFrames
 using GeometryBasics
 using TopoPlots
+using JLD2
 
 const TEST_DIR = @__DIR__
 include(joinpath(TEST_DIR, "lib", "synthetic_data.jl"))

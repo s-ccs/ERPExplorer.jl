@@ -9,6 +9,11 @@ const ALLOWED_VALUE_OPTIONS = Set([
     "bench-live-timeout",
     "bench-live-actions",
     "bench-live-report",
+    "data-dir",
+    "data-file",
+    "model-key",
+    "channel-labels-file",
+    "montage",
 ])
 
 const ALLOWED_FLAGS = Set([
@@ -85,6 +90,11 @@ Options:
   --bench-live-timeout=<Sec>      (default: $(DEFAULT_LIVE_ACTION_TIMEOUT_SEC))
   --bench-live-actions=<Path>     (default: test/livebench_actions_default.txt)
   --bench-live-report=<Path>      (default: timestamped report under test/reports)
+  --data-dir=<Path>               Show launcher with synthetic data plus .jld2 files in this directory
+  --data-file=<Path>              Open a fitted .jld2 UnfoldModel directly
+  --model-key=<Key>               Explicit JLD2 key for the model object
+  --channel-labels-file=<Path>    Optional CSV/TSV channel-label mapping
+  --montage=<Name>                Montage for label lookup (default: standard_1005)
 
 Notes:
   Action IDs are defined in code registry under `test/lib/actions/`.
@@ -234,6 +244,11 @@ function parse_harness_config(
 
     default_live_actions_file = joinpath(script_dir, "livebench_actions_default.txt")
     default_reports_dir = joinpath(script_dir, "reports")
+    data_dir = get(parsed.options, "data-dir", "")
+    data_file = get(parsed.options, "data-file", "")
+    if mode != MODE_SERVE && !isempty(data_dir) && isempty(data_file)
+        error("--data-dir launcher is only supported for --mode=serve. Use --data-file for automated modes.")
+    end
 
     return HarnessConfig(
         mode,
@@ -250,5 +265,10 @@ function parse_harness_config(
         get(parsed.options, "bench-live-actions", default_live_actions_file),
         get(parsed.options, "bench-live-report", ""),
         default_reports_dir,
+        data_dir,
+        data_file,
+        get(parsed.options, "model-key", ""),
+        get(parsed.options, "channel-labels-file", ""),
+        get(parsed.options, "montage", "standard_1005"),
     )
 end

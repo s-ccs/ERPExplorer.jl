@@ -12,12 +12,7 @@ function build_benchmark_fixture(config::HarnessConfig)
     model = Unfold.fit(UnfoldModel, formulaS, evts, dataS, times)
 
     _, topo_example_positions = TopoPlots.example_data()
-    half_positions = topo_example_positions[1:2:end]
-
-    positions_sets = Dict(
-        "TopoPlots example" => topo_example_positions,
-        "TopoPlots example (half)" => half_positions,
-    )
+    positions_sets = Dict("TopoPlots example" => topo_example_positions)
 
     return model, positions_sets
 end

@@ -14,6 +14,11 @@
         joinpath(@__DIR__, "livebench_actions_default.txt"),
         "",
         mktempdir(),
+        "",
+        "",
+        "",
+        "",
+        "standard_1005",
     )
 
     instant_state = DashboardBenchHarness.create_live_playback_state(

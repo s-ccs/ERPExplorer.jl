@@ -1,65 +1,78 @@
 name: CI
 on:
   push:
-      branches:
-      - main
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+    name: Julia ${{ matrix.version }} package tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - '1'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+        version: ['1.11', '1']
     steps:
-      - name: Install Dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y xvfb mesa-utils mesa-vulkan-drivers dbus
-      - name: Start Virtual Display
-        run: |
-          Xvfb :99 -screen 0 1920x1080x24 &
-          eval $(dbus-launch)
-          export DBUS_SESSION_BUS_ADDRESS
-          export DBUS_SESSION_BUS_PID
-      - name: Checkout
-        uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
-          arch: x64
-      - uses: julia-actions/cache@v1
-      - name: Run headless test
-        uses: GabrielBB/xvfb-action@v1
+      - uses: julia-actions/cache@v2
+      - name: Resolve and test the package
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+      - name: Run benchmark with failure propagation
+        if: matrix.version == '1'
+        run: julia --project=. test/dashboard_options.jl --bench --bench-repeats=1 --bench-warmup=0 --bench-out=/tmp/erpexplorer_bench.csv
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.version == '1'
         with:
-          run: |
-             julia --project=. test/dashboard_options.jl --bench --bench-repeats=1 --bench-warmup=0 --bench-out=/tmp/erpexplorer_bench.csv
-      
+          name: benchmark
+          path: /tmp/erpexplorer_bench.csv
+          if-no-files-found: ignore
+  browser:
+    name: Production dashboard in Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      - name: Prepare dashboard environment
+        run: julia --project=test/harness -e 'using Pkg; Pkg.develop(path=pwd()); Pkg.instantiate()'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: test/browser/package-lock.json
+      - run: npm ci
+        working-directory: test/browser
+      - run: npx playwright install --with-deps chromium
+        working-directory: test/browser
+      - run: npm test
+        working-directory: test/browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: test/browser/test-results/
   docs:
     name: Documentation
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      statuses: write
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - run: |
-          julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using ERPExplorer
-            DocMeta.setdocmeta!(ERPExplorer, :DocTestSetup, :(using ERPExplorer); recursive=true)
-            doctest(ERPExplorer)'
+      - uses: julia-actions/cache@v2
+      - run: julia --project=docs -e 'using Pkg; Pkg.develop(path=pwd()); Pkg.instantiate()'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

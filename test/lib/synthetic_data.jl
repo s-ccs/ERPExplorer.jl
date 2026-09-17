@@ -3,14 +3,31 @@ import GeometryBasics
 import Random
 import UnfoldSim
 
+const BENCHMARK_FRUITS = [
+    "apple",
+    "banana",
+    "cherry",
+    "grape",
+    "kiwi",
+    "mango",
+    "orange",
+    "pear",
+    "plum",
+    "strawberry",
+]
+
+function repeated_labels(values, n)
+    return repeat(values, outer = cld(n, length(values)))[1:n]
+end
+
 """
     build_synthetic_erp_data(n_channels = 64)
 
 Generate synthetic epoched EEG data used by tests, examples, and the dashboard
 benchmark harness.
 """
-function build_synthetic_erp_data(n_channels = 64)
-    d1, evts = UnfoldSim.predef_eeg(n_repeats = 120, noiselevel = 25; return_epoched = true)
+function build_synthetic_erp_data(n_channels = 64; n_repeats = 120)
+    d1, evts = UnfoldSim.predef_eeg(n_repeats = n_repeats, noiselevel = 25; return_epoched = true)
     n_timepoints = size(d1, 1)
 
     dataS = [
@@ -36,7 +53,7 @@ function build_synthetic_erp_data(n_channels = 64)
             ),
         ),
         :animal => Random.shuffle(repeat(["cat", "dog"], outer = div(n_events, 2))),
-        :fruit => Random.shuffle(repeat(["orange", "banana"], outer = div(n_events, 2))),
+        :fruit => Random.shuffle(repeated_labels(BENCHMARK_FRUITS, n_events)),
         :color => Random.shuffle(repeat(["black", "white"], outer = div(n_events, 2))),
     )
 

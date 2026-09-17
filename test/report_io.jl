@@ -14,6 +14,11 @@
         joinpath(@__DIR__, "livebench_actions_default.txt"),
         "",
         joinpath(@__DIR__, "reports"),
+        "",
+        "",
+        "",
+        "",
+        "standard_1005",
     )
 
     bench_path = default_bench_report_path(cfg)

@@ -26,6 +26,31 @@ function get_values(t)
     return (;)
 end
 
+function formula_rhs_terms(rhs)
+    terms = Any[]
+    append_formula_rhs_terms!(terms, rhs)
+    return terms
+end
+
+function append_formula_rhs_terms!(terms, term)
+    if term isa Tuple
+        for child in term
+            append_formula_rhs_terms!(terms, child)
+        end
+    elseif is_supported_plot_term(term_type(term))
+        push!(terms, term)
+    elseif term isa InterceptTerm
+        return nothing
+    elseif hasproperty(term, :terms)
+        for child in getproperty(term, :terms)
+            append_formula_rhs_terms!(terms, child)
+        end
+    elseif hasproperty(term, :term)
+        append_formula_rhs_terms!(terms, getproperty(term, :term))
+    end
+    return nothing
+end
+
 """
     extract_variables(model)
 Takes the Unfold model and extract variables from it for future functions. 
@@ -42,14 +67,38 @@ These variables are:\\
 **Return Values:** `Vector{Pair{Symbol}}`.
 """
 function extract_variables(model)
-    ts = Unfold.formulas(model)[1].rhs.terms
-    names = string.(ts)
-    symbols = get_sym.(ts) # non-numeric model terms
-    types = term_type.(ts)
-    vals = get_values.(ts)
-    return [
-        symbol => (name, symbol, type, values) for
-        (name, symbol, type, values) in zip(names, symbols, types, vals) if
-        is_supported_plot_term(type)
-    ]
+    variables = Pair{Symbol,Any}[]
+    seen = Dict{Symbol,Int}()
+
+    for formula in Unfold.formulas(model)
+        for term in formula_rhs_terms(formula.rhs)
+            type = term_type(term)
+            is_supported_plot_term(type) || continue
+
+            symbol = get_sym(term)
+            symbol isa Symbol || continue
+
+            info = (string(term), symbol, type, get_values(term))
+            if haskey(seen, symbol)
+                index = seen[symbol]
+                previous = variables[index].second
+                previous[3] == type || throw(ArgumentError("Predictor $(symbol) has incompatible types across event formulas."))
+                if type == :CategoricalTerm
+                    Set(previous[4]) == Set(info[4]) || throw(ArgumentError(
+                        "Predictor $(symbol) has different categorical levels across event formulas. ERPExplorer requires shared categorical predictors to have the same levels; explore these event models separately."))
+                elseif type == :BSplineTerm
+                    (previous[4].min, previous[4].max) == (info[4].min, info[4].max) || throw(ArgumentError(
+                        "Spline predictor $(symbol) has different bounds across event formulas; explore these event models separately."))
+                else
+                    merged = merge(previous[4], (; min = min(previous[4].min, info[4].min), max = max(previous[4].max, info[4].max)))
+                    variables[index] = symbol => (previous[1], symbol, type, merged)
+                end
+                continue
+            end
+            push!(variables, symbol => info)
+            seen[symbol] = length(variables)
+        end
+    end
+
+    return variables
 end

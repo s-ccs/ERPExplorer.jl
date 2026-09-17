@@ -26,6 +26,8 @@ Fields:
 - `live_actions_file`: scenario file consumed by live-auto mode.
 - `live_report_file`: explicit live report CSV path, empty means auto path.
 - `reports_dir`: default directory for auto-generated report paths.
+- `data_dir`, `data_file`, `model_key`, `channel_labels_file`, `montage`:
+  optional real-data loader controls for interactive serve modes.
 """
 struct HarnessConfig
     mode::Symbol
@@ -42,6 +44,11 @@ struct HarnessConfig
     live_actions_file::String
     live_report_file::String
     reports_dir::String
+    data_dir::String
+    data_file::String
+    model_key::String
+    channel_labels_file::String
+    montage::String
 end
 
 """Mode sentinel for help output (`--help` / `-h`)."""

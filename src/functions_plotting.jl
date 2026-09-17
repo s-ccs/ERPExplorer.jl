@@ -8,7 +8,7 @@ Arguments:\\
 - `formula_values::Vector{Pair{Symbol}}` - value range for continuous variables, levels for categorical.\\
 - `categorical_vars::Vector{Symbol}` - categorical terms.\\
 - `continuous_terms::Vector{Symbol}` - continuous terms.\\
-- `mapping::Dict{Symbol, Symbol}` - dictionary with dropdown menus and their default values.\\
+- `mapping::Dict{Symbol, Any}` - dictionary with dropdown menus, line/marker visibility, and their default values.\\
 - `active_terms` - optional set/dict of formula terms active in the current effects call.\\
 - `plot_size` - optional main plot size used to scale scatter markers and line widths.\\
 - `axis_options` - optional axis configuration. Supported keys are `:x_unit` (`:ms`/`:s`),
@@ -55,6 +55,19 @@ function scaled_plot_linewidth(
 )
     scale = plot_area_scale(plot_size; base_size = base_size, facet_count = facet_count)
     return clamp(base_linewidth * scale, min_linewidth, max_linewidth)
+end
+
+function erp_layer_visibility(mapping_state)
+    isnothing(mapping_state) && return (show_lines = true, show_markers = true)
+    show_lines = get(mapping_state, :show_lines, true)
+    show_markers = get(mapping_state, :show_markers, true)
+    show_lines = show_lines isa Bool ? show_lines : true
+    show_markers = show_markers isa Bool ? show_markers : true
+
+    if !show_lines && !show_markers
+        return (show_lines = true, show_markers = false)
+    end
+    return (show_lines = show_lines, show_markers = show_markers)
 end
 
 function floor_sigdigits(x; digits = 3)
@@ -117,6 +130,50 @@ function continuous_colorbar_ticks(colorrange; tick_count = 5, digits = 3)
         tick_positions,
         [format_sigdigits_down(position; digits = digits) for position in tick_positions],
     )
+end
+
+function categorical_marker_palette()
+    # Keep the first ten visually distinct for small markers and the 10-fruit benchmark.
+    return Any[
+        :circle,
+        :rect,
+        :diamond,
+        :utriangle,
+        :cross,
+        :xcross,
+        :star5,
+        :vline,
+        :hline,
+        '#',
+        :pentagon,
+        :dtriangle,
+        :star4,
+        :hexagon,
+        :ltriangle,
+        :rtriangle,
+        :octagon,
+        :star8,
+    ]
+end
+
+function categorical_linestyle_palette()
+    return Any[
+        :solid,
+        :dash,
+        :dot,
+        :dashdot,
+        :dashdotdot,
+        (:dash, :dense),
+        (:dash, :loose),
+        (:dot, :dense),
+        (:dot, :loose),
+        (:dashdot, :dense),
+        (:dashdot, :loose),
+        Makie.Linestyle(Float32[0, 1, 2]),
+        Makie.Linestyle(Float32[0, 3, 6]),
+        Makie.Linestyle(Float32[0, 2, 4, 5]),
+        Makie.Linestyle(Float32[0, 1, 2, 4, 6]),
+    ]
 end
 
 function apply_continuous_colorbar_ticks!(spec_layout, colorrange)
@@ -217,6 +274,7 @@ function update_grid(
     else
         error("Unsupported x_unit $(repr(x_unit_raw)). Supported values: :ms or :s.")
     end
+    layer_visibility = erp_layer_visibility(mapping_state)
 
     # Break the last segment by inserting NaN at the maximal time point.
     # This avoids an unwanted "wrap-like" visual connection across grouped trajectories.
@@ -294,16 +352,21 @@ function update_grid(
     # Continuous terms:
     # if one is active, color lines by that continuous term.
     # when categorical color is also active, use an alternate scale name (`:color2`) so both
-    # categorical and continuous color encodings can coexist without colliding.
+    # categorical and continuous color encodings can coexist without colliding. If the user
+    # hides lines, a marker-only continuous view can still use the normal color aesthetic.
     active_cont = filter(cont -> get(cont_active, cont, false), continuous_terms)
     has_cont = !isempty(active_cont)
     continuous_colorrange = nothing
     if has_cont
         cont_term = first(active_cont)
-        if cat_color !== nothing
-            line_aes[:color] = cont_term => AlgebraOfGraphics.scale(:color2)
-        else
-            line_aes[:color] = cont_term
+        if layer_visibility.show_lines
+            if cat_color !== nothing
+                line_aes[:color] = cont_term => AlgebraOfGraphics.scale(:color2)
+            else
+                line_aes[:color] = cont_term
+            end
+        elseif cat_color === nothing
+            scatter_aes[:color] = cont_term
         end
     elseif cat_color !== nothing
         line_aes[:color] = cat_color => string(cat_color)
@@ -339,8 +402,8 @@ function update_grid(
         scaled_plot_linewidth(plot_size; facet_count = facet_count)
     push!(line_visual_kwargs, :linewidth => plot_linewidth)
 
-    # Compose layers: line + scatter over the same x/y/facet base mapping.
-    # Both layers share the same grouped data and only differ in visual channels.
+    # Compose line/scatter layers over the same x/y/facet base mapping.
+    # At least one layer is always kept visible by `erp_layer_visibility`.
     scatter_layer = AlgebraOfGraphics.mapping(; pairs(scatter_aes)...) *
                     AlgebraOfGraphics.visual(
                         Scatter;
@@ -355,29 +418,33 @@ function update_grid(
                      line_visual_kwargs...,
                  )
 
-    spec = base * (line_layer + scatter_layer)
+    layers =
+        if layer_visibility.show_lines && layer_visibility.show_markers
+            line_layer + scatter_layer
+        elseif layer_visibility.show_lines
+            line_layer
+        else
+            scatter_layer
+        end
+    spec = base * layers
 
     # Build scale configuration explicitly.
     # Explicit category lists stabilize legend/facet ordering across reactive updates.
     scales_kwargs = Dict{Symbol,Any}()
-    if cat_color !== nothing
+    if cat_color !== nothing && (!has_cont || layer_visibility.show_markers)
         scales_kwargs[:Color] =
             (; palette = Makie.wong_colors(), categories = categorical_levels(cat_color))
     end
-    if cat_marker !== nothing
+    if cat_marker !== nothing && layer_visibility.show_markers
         scales_kwargs[:Marker] =
             (;
-                palette = [:circle, :xcross, :star4, :diamond],
+                palette = categorical_marker_palette(),
                 categories = categorical_levels(cat_marker),
             )
     end
-    if cat_linestyle !== nothing
+    if cat_linestyle !== nothing && layer_visibility.show_lines
         scales_kwargs[:LineStyle] = (;
-            palette = [
-                :solid,
-                Makie.Linestyle(Float32[0, 1, 2]),
-                Makie.Linestyle(Float32[0, 3, 6]),
-            ],
+            palette = categorical_linestyle_palette(),
             categories = categorical_levels(cat_linestyle),
         )
     end
@@ -390,9 +457,9 @@ function update_grid(
 
     # Continuous color scale (viridis) uses current data range of the active continuous term.
     # Scale key depends on whether categorical color occupies the default `:Color` slot.
-    if has_cont
+    if has_cont && (layer_visibility.show_lines || cat_color === nothing)
         cont_term = first(active_cont)
-        scale_key = cat_color !== nothing ? :color2 : :Color
+        scale_key = layer_visibility.show_lines && cat_color !== nothing ? :color2 : :Color
         continuous_colorrange = extrema(plot_data[!, cont_term])
         scales_kwargs[scale_key] =
             (; colormap = :viridis, colorrange = continuous_colorrange)
@@ -403,7 +470,10 @@ function update_grid(
     axis_kwargs = Dict{Symbol,Any}()
     axis_kwargs[:xlabel] = isnothing(axis_config[:xlabel]) ? default_xlabel : axis_config[:xlabel]
     axis_kwargs[:ylabel] = axis_config[:ylabel]
-    for key in (:xlimits, :ylimits, :xticks, :yticks, :xtickformat, :ytickformat, :xscale, :yscale)
+    if !isnothing(axis_config[:xlimits]) || !isnothing(axis_config[:ylimits])
+        axis_kwargs[:limits] = (axis_config[:xlimits], axis_config[:ylimits])
+    end
+    for key in (:xticks, :yticks, :xtickformat, :ytickformat, :xscale, :yscale)
         if !isnothing(axis_config[key])
             axis_kwargs[key] = axis_config[key]
         end

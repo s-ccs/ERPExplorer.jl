@@ -165,6 +165,19 @@ const ACTION_REGISTRY = Dict{String,ActionSpec}(
     ),
 )
 
+# Production-only controls are exercised by the live runner and browser tests.
+for (id, option, value, renders) in [
+    ("lines_only", :show_markers, false, true),
+    ("markers_only", :show_lines, false, true),
+    ("lines_on", :show_lines, true, true),
+    ("markers_on", :show_markers, true, true),
+    ("show_topoplots", :series, true, true),
+    ("hide_topoplots", :series, false, false),
+    ("topoplot_bins_3", :bin_num, 3, true),
+]
+    ACTION_REGISTRY[id] = _action_spec(id; live_handler = bindings -> bindings.set_option!(option, value), live_triggers_render = renders)
+end
+
 const DEFAULT_BENCH_ACTION_IDS = [
     "baseline",
     "toggle_luminance_on",

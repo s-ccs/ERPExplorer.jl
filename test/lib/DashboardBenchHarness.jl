@@ -38,6 +38,7 @@ include("live/app_builder.jl")
 include("live/server.jl")
 include("synthetic_data.jl")
 include("fixture.jl")
+include("real_data_launcher.jl")
 
 export ParsedCliArgs,
        HarnessConfig,
@@ -74,6 +75,8 @@ export ParsedCliArgs,
        build_live_benchmark_app,
        start_harness_server,
        build_benchmark_fixture,
+       build_real_data_launcher_app,
+       load_real_data_fixture,
        ACTION_SCOPE_BENCH,
        ACTION_SCOPE_LIVE
 
